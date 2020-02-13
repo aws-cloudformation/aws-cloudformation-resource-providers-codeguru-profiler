@@ -23,11 +23,11 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                - "initech:CreateReport"
-                - "initech:DeleteReport"
-                - "initech:DescribeReport"
-                - "initech:ListReports"
-                - "initech:UpdateReport"
+                - "codeguru-profiler:CreateProfilingGroup"
+                - "codeguru-profiler:DeleteProfilingGroup"
+                - "codeguru-profiler:DescribeProfilingGroup"
+                - "codeguru-profiler:ListProfilingGroups"
+                - "codeguru-profiler:UpdateProfilingGroup"
                 Resource: "*"
 Outputs:
   ExecutionRoleArn:

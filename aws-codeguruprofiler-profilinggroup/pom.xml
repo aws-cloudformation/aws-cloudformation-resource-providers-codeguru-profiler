@@ -21,7 +21,8 @@
     <repositories>
         <repository>
             <id>central</id>
-            <url>http://central.maven.org/maven2</url>
+            <!-- https://support.sonatype.com/hc/en-us/articles/360041287334 -->
+            <url>https://repo1.maven.org/maven2/</url>
         </repository>
     </repositories>
 
@@ -73,8 +74,9 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-codeguruprofiler</artifactId>
-            <version>1.11.692</version>
+            <version>1.11.720</version>
         </dependency>
+
 
     </dependencies>
 

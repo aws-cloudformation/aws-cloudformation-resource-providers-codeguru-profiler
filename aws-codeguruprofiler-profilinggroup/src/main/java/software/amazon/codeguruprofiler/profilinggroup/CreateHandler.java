@@ -17,7 +17,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
 
         final ResourceModel model = request.getDesiredResourceState();
 
-        // TODO : put your code here
+//        System.out.println(model.toString());
 
         return ProgressEvent.<ResourceModel, CallbackContext>builder()
             .resourceModel(model)

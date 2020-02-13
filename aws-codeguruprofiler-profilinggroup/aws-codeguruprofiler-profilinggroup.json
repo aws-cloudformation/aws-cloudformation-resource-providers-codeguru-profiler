@@ -20,6 +20,9 @@
     "primaryIdentifier": [
         "/properties/ProfilingGroupName"
     ],
+    "createOnlyProperties": [
+        "/properties/ProfilingGroupName"
+    ],
     "handlers": {
         "create": {
             "permissions": [
@@ -29,11 +32,6 @@
         "read": {
             "permissions": [
                 "codeguru-profiler:DescribeProfilingGroup"
-            ]
-        },
-        "update": {
-            "permissions": [
-                "codeguru-profiler:UpdateProfilingGroup"
             ]
         },
         "delete": {

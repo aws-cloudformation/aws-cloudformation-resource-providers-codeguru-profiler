@@ -75,6 +75,7 @@
             <artifactId>aws-java-sdk-codeguruprofiler</artifactId>
             <version>1.11.692</version>
         </dependency>
+
     </dependencies>
 
     <build>

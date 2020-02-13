@@ -68,6 +68,13 @@
             <version>2.26.0</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-codeguruprofiler -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-codeguruprofiler</artifactId>
+            <version>1.11.692</version>
+        </dependency>
     </dependencies>
 
     <build>

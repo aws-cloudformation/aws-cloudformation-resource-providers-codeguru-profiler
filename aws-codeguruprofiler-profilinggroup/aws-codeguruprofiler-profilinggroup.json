@@ -1,48 +1,47 @@
 {
-    "typeName": "AWS::CodeGuruProfiler::ProfilingGroup",
-    "description": "This resource schema represents the Profiling Group resource in the Amazon CodeGuru Profiler service.",
-    "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-codeguru-profiler",
-    "definitions": {
-    },
-    "properties": {
-        "ProfilingGroupName": {
-            "description": "The name of the profiling group.",
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255,
-            "pattern": "^[\\w-]+$"
-        }
-    },
-    "additionalProperties": false,
-    "required": [
-        "ProfilingGroupName"
-    ],
-    "primaryIdentifier": [
-        "/properties/ProfilingGroupName"
-    ],
-    "createOnlyProperties": [
-        "/properties/ProfilingGroupName"
-    ],
-    "handlers": {
-        "create": {
-            "permissions": [
-                "codeguru-profiler:CreateProfilingGroup"
-            ]
-        },
-        "read": {
-            "permissions": [
-                "codeguru-profiler:DescribeProfilingGroup"
-            ]
-        },
-        "delete": {
-            "permissions": [
-                "codeguru-profiler:DeleteProfilingGroup"
-            ]
-        },
-        "list": {
-            "permissions": [
-                "codeguru-profiler:ListProfilingGroups"
-            ]
-        }
+  "typeName": "AWS::CodeGuruProfiler::ProfilingGroup",
+  "description": "This resource schema represents the Profiling Group resource in the Amazon CodeGuru Profiler service.",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-codeguru-profiler",
+  "definitions": {},
+  "properties": {
+    "ProfilingGroupName": {
+      "description": "The name of the profiling group.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[\\w-]+$"
     }
+  },
+  "additionalProperties": false,
+  "required": [
+    "ProfilingGroupName"
+  ],
+  "primaryIdentifier": [
+    "/properties/ProfilingGroupName"
+  ],
+  "createOnlyProperties": [
+    "/properties/ProfilingGroupName"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "codeguru-profiler:CreateProfilingGroup"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "codeguru-profiler:DescribeProfilingGroup"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "codeguru-profiler:DeleteProfilingGroup"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "codeguru-profiler:ListProfilingGroups"
+      ]
+    }
+  }
 }

@@ -20,4 +20,3 @@ Resources:
       Handler: software.amazon.codeguruprofiler.profilinggroup.HandlerWrapper::testEntrypoint
       Runtime: java8
       CodeUri: ./target/aws-codeguruprofiler-profilinggroup-handler-1.0-SNAPSHOT.jar
-

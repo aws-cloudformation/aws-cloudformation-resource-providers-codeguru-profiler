@@ -1,12 +1,7 @@
-## My Project
+# CloudFormation Resource Provider Package For Amazon CodeGuru Profiler
 
-TODO: Fill this README out!
-
-Be sure to:
-
-* Change the title in this README
-* Edit your repository description on GitHub
+The CloudFormation Resource Provider Package For Amazon CodeGuru Profiler.
 
 ## License
 
-This project is licensed under the Apache-2.0 License.
+This library is licensed under the Apache 2.0 License.

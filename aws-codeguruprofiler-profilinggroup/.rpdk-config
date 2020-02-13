@@ -1,0 +1,15 @@
+{
+    "typeName": "AWS::CodeGuruProfiler::ProfilingGroup",
+    "language": "java",
+    "runtime": "java8",
+    "entrypoint": "software.amazon.codeguruprofiler.profilinggroup.HandlerWrapper::handleRequest",
+    "testEntrypoint": "software.amazon.codeguruprofiler.profilinggroup.HandlerWrapper::testEntrypoint",
+    "settings": {
+        "namespace": [
+            "software",
+            "amazon",
+            "codeguruprofiler",
+            "profilinggroup"
+        ]
+    }
+}

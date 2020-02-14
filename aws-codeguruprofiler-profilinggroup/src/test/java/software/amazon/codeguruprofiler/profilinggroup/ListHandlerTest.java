@@ -36,15 +36,18 @@ public class ListHandlerTest {
     @Mock
     private Logger logger;
 
+    private ResourceHandlerRequest<ResourceModel> request;
+
     @BeforeEach
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         logger = mock(Logger.class);
+
+        request = makeValidRequest();
     }
 
     @Test
     public void testSuccessState() {
-        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
         final String arn = "arn:aws:codeguru-profiler:us-east-1:000000000000:profilingGroup/IronMan-Suite-34";
         final ProfilingGroupDescription profilingGroupDescription = ProfilingGroupDescription.builder()
                         .name("IronMan-Suite-34")
@@ -85,8 +88,6 @@ public class ListHandlerTest {
 
     @Test
     public void testInternalServerException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
-
         doThrow(InternalServerException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
@@ -96,8 +97,6 @@ public class ListHandlerTest {
 
     @Test
     public void testThrottlingException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
-
         doThrow(ThrottlingException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 

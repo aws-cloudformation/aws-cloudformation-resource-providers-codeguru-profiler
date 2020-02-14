@@ -1,5 +1,10 @@
 package software.amazon.codeguruprofiler.profilinggroup;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ProfilingGroupDescription;
@@ -15,11 +20,6 @@ import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -39,15 +39,18 @@ public class ReadHandlerTest {
     @Mock
     private Logger logger;
 
+    private ResourceHandlerRequest<ResourceModel> request;
+
     @BeforeEach
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         logger = mock(Logger.class);
+
+        request = makeValidRequest();
     }
 
     @Test
     public void testSuccessState() {
-        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
         final String arn = "arn:aws:codeguru-profiler:us-east-1:000000000000:profilingGroup/IronMan-Suite-34";
 
         doReturn(DescribeProfilingGroupResponse.builder()
@@ -73,8 +76,6 @@ public class ReadHandlerTest {
 
     @Test
     public void testNotFoundException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
-
         doThrow(ResourceNotFoundException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
@@ -84,8 +85,6 @@ public class ReadHandlerTest {
 
     @Test
     public void testInternalServerException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
-
         doThrow(InternalServerException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
@@ -95,8 +94,6 @@ public class ReadHandlerTest {
 
     @Test
     public void testThrottlingException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
-
         doThrow(ThrottlingException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
@@ -106,12 +103,10 @@ public class ReadHandlerTest {
 
     @Test
     public void testValidationException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeInvalidRequest();
-
         doThrow(ValidationException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
         assertThrows(CfnInvalidRequestException.class, () ->
-                new ReadHandler().handleRequest(proxy, request, null, logger));
+                new ReadHandler().handleRequest(proxy, makeInvalidRequest(), null, logger));
     }
 }

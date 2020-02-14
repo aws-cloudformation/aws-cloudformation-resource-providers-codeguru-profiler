@@ -38,16 +38,18 @@ public class DeleteHandlerTest {
     @Mock
     private Logger logger;
 
+    private ResourceHandlerRequest<ResourceModel> request;
+
     @BeforeEach
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         logger = mock(Logger.class);
+
+        request = makeValidRequest();
     }
 
     @Test
     public void testSuccessState() {
-        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
-
         doReturn(DeleteProfilingGroupResponse.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
@@ -65,8 +67,6 @@ public class DeleteHandlerTest {
 
     @Test
     public void testNotFoundException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
-
         doThrow(ResourceNotFoundException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
@@ -76,8 +76,6 @@ public class DeleteHandlerTest {
 
     @Test
     public void testInternalServerException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
-
         doThrow(InternalServerException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
@@ -87,8 +85,6 @@ public class DeleteHandlerTest {
 
     @Test
     public void testThrottlingException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
-
         doThrow(ThrottlingException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
@@ -98,12 +94,10 @@ public class DeleteHandlerTest {
 
     @Test
     public void testValidationException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeInvalidRequest();
-
         doThrow(ValidationException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
         assertThrows(CfnInvalidRequestException.class, () ->
-                new DeleteHandler().handleRequest(proxy, request, null, logger));
+                new DeleteHandler().handleRequest(proxy, makeInvalidRequest(), null, logger));
     }
 }

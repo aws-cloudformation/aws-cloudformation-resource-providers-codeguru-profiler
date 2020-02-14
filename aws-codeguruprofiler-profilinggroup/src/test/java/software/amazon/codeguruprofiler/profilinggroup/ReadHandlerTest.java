@@ -1,5 +1,15 @@
 package software.amazon.codeguruprofiler.profilinggroup;
 
+import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupResponse;
+import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
+import software.amazon.awssdk.services.codeguruprofiler.model.ProfilingGroupDescription;
+import software.amazon.awssdk.services.codeguruprofiler.model.ResourceNotFoundException;
+import software.amazon.awssdk.services.codeguruprofiler.model.ThrottlingException;
+import software.amazon.awssdk.services.codeguruprofiler.model.ValidationException;
+import software.amazon.cloudformation.exceptions.CfnInvalidRequestException;
+import software.amazon.cloudformation.exceptions.CfnNotFoundException;
+import software.amazon.cloudformation.exceptions.CfnServiceInternalErrorException;
+import software.amazon.cloudformation.exceptions.CfnThrottlingException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
@@ -12,7 +22,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeInvalidRequest;
+import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeValidRequest;
 
 @ExtendWith(MockitoExtension.class)
 public class ReadHandlerTest {
@@ -30,25 +46,72 @@ public class ReadHandlerTest {
     }
 
     @Test
-    public void handleRequest_SimpleSuccess() {
-        final ReadHandler handler = new ReadHandler();
+    public void testSuccessState() {
+        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
+        final String arn = "arn:aws:codeguru-profiler:us-east-1:000000000000:profilingGroup/IronMan-Suite-34";
 
-        final ResourceModel model = ResourceModel.builder().build();
-
-        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
-            .desiredResourceState(model)
-            .build();
+        doReturn(DescribeProfilingGroupResponse.builder()
+                .profilingGroup(ProfilingGroupDescription.builder()
+                        .name("IronMan-Suite-34")
+                        .arn(arn)
+                        .build())
+                .build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-            = handler.handleRequest(proxy, request, null, logger);
+                = new ReadHandler().handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
         assertThat(response.getCallbackContext()).isNull();
         assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
         assertThat(response.getResourceModel()).isEqualTo(request.getDesiredResourceState());
-        assertThat(response.getResourceModels()).isNull();
+        assertThat(response.getResourceModel().getArn()).isEqualTo(arn);
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
+    }
+
+    @Test
+    public void testNotFoundException() {
+        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
+
+        doThrow(ResourceNotFoundException.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+
+        assertThrows(CfnNotFoundException.class, () ->
+                new ReadHandler().handleRequest(proxy, request, null, logger));
+    }
+
+    @Test
+    public void testInternalServerException() {
+        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
+
+        doThrow(InternalServerException.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+
+        assertThrows(CfnServiceInternalErrorException.class, () ->
+                new ReadHandler().handleRequest(proxy, request, null, logger));
+    }
+
+    @Test
+    public void testThrottlingException() {
+        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
+
+        doThrow(ThrottlingException.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+
+        assertThrows(CfnThrottlingException.class, () ->
+                new ReadHandler().handleRequest(proxy, request, null, logger));
+    }
+
+    @Test
+    public void testValidationException() {
+        final ResourceHandlerRequest<ResourceModel> request = makeInvalidRequest();
+
+        doThrow(ValidationException.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+
+        assertThrows(CfnInvalidRequestException.class, () ->
+                new ReadHandler().handleRequest(proxy, request, null, logger));
     }
 }

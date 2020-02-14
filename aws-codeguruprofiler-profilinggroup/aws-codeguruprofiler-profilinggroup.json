@@ -2,7 +2,12 @@
   "typeName": "AWS::CodeGuruProfiler::ProfilingGroup",
   "description": "This resource schema represents the Profiling Group resource in the Amazon CodeGuru Profiler service.",
   "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-codeguru-profiler",
-  "definitions": {},
+  "definitions": {
+    "Arn": {
+      "type": "string",
+      "pattern": "^arn:aws(-(cn|gov))?:[a-z-]+:(([a-z]+-)+[0-9]+):([0-9]{12}):[^.]+$"
+    }
+  },
   "properties": {
     "ProfilingGroupName": {
       "description": "The name of the profiling group.",
@@ -10,6 +15,13 @@
       "minLength": 1,
       "maxLength": 255,
       "pattern": "^[\\w-]+$"
+    },
+    "Arn": {
+      "description": "The Amazon Resource Name (ARN) of the specified profiling group.",
+      "$ref": "#/definitions/Arn",
+      "examples": [
+        "arn:aws:codeguru-profiler:us-east-1:000000000000:profilingGroup/My-example-profiling-group"
+      ]
     }
   },
   "additionalProperties": false,
@@ -18,6 +30,9 @@
   ],
   "primaryIdentifier": [
     "/properties/ProfilingGroupName"
+  ],
+  "readOnlyProperties": [
+    "/properties/Arn"
   ],
   "createOnlyProperties": [
     "/properties/ProfilingGroupName"

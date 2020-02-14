@@ -70,14 +70,12 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-codeguruprofiler -->
+        <!-- https://mvnrepository.com/artifact/software.amazon.awssdk/codeguruprofiler -->
         <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-codeguruprofiler</artifactId>
-            <version>1.11.720</version>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>codeguruprofiler</artifactId>
+            <version>2.10.63</version>
         </dependency>
-
-
     </dependencies>
 
     <build>

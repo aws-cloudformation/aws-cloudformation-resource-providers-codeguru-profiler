@@ -26,6 +26,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeInvalidRequest;
+import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeValidRequest;
 
 @ExtendWith(MockitoExtension.class)
 public class DeleteHandlerTest {
@@ -42,16 +44,9 @@ public class DeleteHandlerTest {
         logger = mock(Logger.class);
     }
 
-    private final ResourceModel validResourceModel = ResourceModel.builder()
-            .profilingGroupName("IronMan-Suite-34")
-            .build();
-
-    private final ResourceModel invalidResourceModel = ResourceModel.builder()
-            .build();
-
     @Test
     public void testSuccessState() {
-        final ResourceHandlerRequest<ResourceModel> request = makeRequest(validResourceModel);
+        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
 
         doReturn(DeleteProfilingGroupResponse.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
@@ -70,7 +65,7 @@ public class DeleteHandlerTest {
 
     @Test
     public void testNotFoundException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeRequest(validResourceModel);
+        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
 
         doThrow(ResourceNotFoundException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
@@ -81,7 +76,7 @@ public class DeleteHandlerTest {
 
     @Test
     public void testInternalServerException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeRequest(validResourceModel);
+        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
 
         doThrow(InternalServerException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
@@ -92,7 +87,7 @@ public class DeleteHandlerTest {
 
     @Test
     public void testThrottlingException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeRequest(validResourceModel);
+        final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
 
         doThrow(ThrottlingException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
@@ -103,18 +98,12 @@ public class DeleteHandlerTest {
 
     @Test
     public void testValidationException() {
-        final ResourceHandlerRequest<ResourceModel> request = makeRequest(invalidResourceModel);
+        final ResourceHandlerRequest<ResourceModel> request = makeInvalidRequest();
 
         doThrow(ValidationException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
         assertThrows(CfnInvalidRequestException.class, () ->
                 new DeleteHandler().handleRequest(proxy, request, null, logger));
-    }
-
-    private ResourceHandlerRequest<ResourceModel> makeRequest(ResourceModel model) {
-        return ResourceHandlerRequest.<ResourceModel>builder()
-                .desiredResourceState(model)
-                .build();
     }
 }

@@ -8,5 +8,22 @@
         "ProfilingGroupName": "MySampleProfilingGroup"
       }
     }
+  },
+  "Outputs": {
+    "Ref": {
+      "Description": "The Ref",
+      "Value": {
+        "Ref": "MyProfilingGroup"
+      }
+    },
+    "GetAttArn": {
+      "Description": "The GetAtt",
+      "Value": {
+        "Fn::GetAtt": [
+          "MyProfilingGroup",
+          "Arn"
+        ]
+      }
+    }
   }
 }

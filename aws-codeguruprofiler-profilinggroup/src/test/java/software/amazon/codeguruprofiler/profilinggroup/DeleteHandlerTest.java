@@ -3,8 +3,10 @@ package software.amazon.codeguruprofiler.profilinggroup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.services.codeguruprofiler.model.DeleteProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.DeleteProfilingGroupResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ResourceNotFoundException;
@@ -51,7 +53,11 @@ public class DeleteHandlerTest {
     @Test
     public void testSuccessState() {
         doReturn(DeleteProfilingGroupResponse.builder().build())
-                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(
+                    ArgumentMatchers.eq(DeleteProfilingGroupRequest
+                        .builder()
+                        .profilingGroupName("IronMan-Suit-34")
+                        .build()), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = new DeleteHandler().handleRequest(proxy, request, null, logger);

@@ -4,7 +4,7 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 public class RequestBuilder {
     static ResourceHandlerRequest<ResourceModel> makeValidRequest() {
-        return makeRequest(ResourceModel.builder().profilingGroupName("IronMan-Suite-34").build());
+        return makeRequest(ResourceModel.builder().profilingGroupName("IronMan-Suit-34").build());
     }
 
     static ResourceHandlerRequest<ResourceModel> makeInvalidRequest() {

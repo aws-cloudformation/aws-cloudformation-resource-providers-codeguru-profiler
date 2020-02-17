@@ -3,9 +3,11 @@ package software.amazon.codeguruprofiler.profilinggroup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.codeguruprofiler.model.ConflictException;
+import software.amazon.awssdk.services.codeguruprofiler.model.CreateProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.CreateProfilingGroupResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ProfilingGroupDescription;
@@ -55,10 +57,14 @@ public class CreateHandlerTest {
     public void testSuccessState() {
         doReturn(CreateProfilingGroupResponse.builder()
                 .profilingGroup(ProfilingGroupDescription.builder()
-                        .name("IronMan-Suite-34")
+                        .name("IronMan-Suit-34")
                         .build())
                 .build())
-                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(
+                    ArgumentMatchers.eq(CreateProfilingGroupRequest
+                        .builder()
+                        .profilingGroupName("IronMan-Suit-34")
+                        .build()), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = new CreateHandler().handleRequest(proxy, request, null, logger);

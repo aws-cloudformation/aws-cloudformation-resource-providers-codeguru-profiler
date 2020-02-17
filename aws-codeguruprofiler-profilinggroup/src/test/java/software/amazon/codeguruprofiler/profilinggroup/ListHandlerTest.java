@@ -48,25 +48,26 @@ public class ListHandlerTest {
 
     @Test
     public void testSuccessState() {
-        final String arn = "arn:aws:codeguru-profiler:us-east-1:000000000000:profilingGroup/IronMan-Suite-34";
+        final String arn = "arn:aws:codeguru-profiler:us-east-1:000000000000:profilingGroup/IronMan-Suit-34";
         final ProfilingGroupDescription profilingGroupDescription = ProfilingGroupDescription.builder()
-                        .name("IronMan-Suite-34")
+                        .name("IronMan-Suit-34")
                         .arn(arn)
                         .build();
 
         doReturn(ListProfilingGroupsResponse.builder()
                 .profilingGroups(profilingGroupDescription)
-                .nextToken("test-token")
+                .nextToken("page3")
                 .build())
                 .when(proxy).injectCredentialsAndInvokeV2(
                         ArgumentMatchers.eq(ListProfilingGroupsRequest
                                 .builder()
-                                .nextToken(null)
+                                .nextToken("page2")
                                 .maxResults(100)
                                 .includeDescription(true)
                                 .build()),
                         any());
 
+        request.setNextToken("page2");
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = new ListHandler().handleRequest(proxy, request, null, logger);
 
@@ -81,7 +82,7 @@ public class ListHandlerTest {
         assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
         assertThat(response.getResourceModel()).isNull();
         assertThat(response.getResourceModels()).containsExactly(expectedModel);
-        assertThat(response.getNextToken()).isEqualTo("test-token");
+        assertThat(response.getNextToken()).isEqualTo("page3");
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
     }

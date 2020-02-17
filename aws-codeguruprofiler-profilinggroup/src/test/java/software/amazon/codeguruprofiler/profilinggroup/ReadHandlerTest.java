@@ -3,8 +3,10 @@ package software.amazon.codeguruprofiler.profilinggroup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ProfilingGroupDescription;
@@ -51,15 +53,19 @@ public class ReadHandlerTest {
 
     @Test
     public void testSuccessState() {
-        final String arn = "arn:aws:codeguru-profiler:us-east-1:000000000000:profilingGroup/IronMan-Suite-34";
+        final String arn = "arn:aws:codeguru-profiler:us-east-1:000000000000:profilingGroup/IronMan-Suit-34";
 
         doReturn(DescribeProfilingGroupResponse.builder()
                 .profilingGroup(ProfilingGroupDescription.builder()
-                        .name("IronMan-Suite-34")
+                        .name("IronMan-Suit-34")
                         .arn(arn)
                         .build())
                 .build())
-                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(
+                    ArgumentMatchers.eq(DescribeProfilingGroupRequest
+                        .builder()
+                        .profilingGroupName("IronMan-Suit-34")
+                        .build()), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = new ReadHandler().handleRequest(proxy, request, null, logger);

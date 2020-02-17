@@ -1,0 +1,29 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Sample template for the AWS::CodeGuruProfiler::ProfilingGroup resource.",
+  "Resources": {
+    "MyProfilingGroup": {
+      "Type": "AWS::CodeGuruProfiler::ProfilingGroup",
+      "Properties": {
+        "ProfilingGroupName": "MySampleProfilingGroup"
+      }
+    }
+  },
+  "Outputs": {
+    "Ref": {
+      "Description": "The Ref",
+      "Value": {
+        "Ref": "MyProfilingGroup"
+      }
+    },
+    "GetAttArn": {
+      "Description": "The GetAtt",
+      "Value": {
+        "Fn::GetAtt": [
+          "MyProfilingGroup",
+          "Arn"
+        ]
+      }
+    }
+  }
+}

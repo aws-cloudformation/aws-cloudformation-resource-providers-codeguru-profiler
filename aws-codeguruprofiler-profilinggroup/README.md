@@ -34,13 +34,21 @@ pre-commit run --all-files && AWS_REGION=us-east-1 mvn clean package
     ```
     cfn submit -v --region us-east-1
     ```
-2. Create a sample CloudFormation stack that defines a profiling group:
+2. Update the default version used by CloudFormation:
+    ```
+    # Get the latest version in your account
+    Arn=`aws cloudformation list-type-versions --region us-east-1 --type RESOURCE --type-name "AWS::CodeGuruProfiler::ProfilingGroup" | jq '.TypeVersionSummaries[].Arn' | sort -nr | head -n 1 | tr -d '"'`
+
+    # Update the default version used by CloudFormation
+    aws cloudformation set-type-default-version --region us-east-1 --arn "$Arn"
+    ```
+3. Create a sample CloudFormation stack that defines a profiling group:
     ```
     aws cloudformation create-stack --region us-east-1 --template-body "file://sample-template.json" --stack-name "sample-profiling-group-resource-creation"
     ```
-3. Validate the creation of the profiling group!
-4. Delete the sample stack:
+4. Validate the creation of the profiling group!
+5. Delete the sample stack:
     ```
     aws cloudformation delete-stack --region us-east-1 --stack-name "sample-profiling-group-resource-creation"
     ```
-5. Validate the profiling group has been deleted!
+6. Validate the profiling group has been deleted!

@@ -17,6 +17,8 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 public class DeleteHandler extends BaseHandler<CallbackContext> {
 
+    private final CodeGuruProfilerClient profilerClient = CodeGuruProfilerClientBuilder.create();
+
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,
@@ -27,8 +29,6 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
         final ResourceModel model = request.getDesiredResourceState();
 
         try {
-            CodeGuruProfilerClient profilerClient = CodeGuruProfilerClient.create();
-
             DeleteProfilingGroupRequest deleteProfilingGroupRequest = DeleteProfilingGroupRequest.builder()
                     .profilingGroupName(model.getProfilingGroupName())
                     .build();

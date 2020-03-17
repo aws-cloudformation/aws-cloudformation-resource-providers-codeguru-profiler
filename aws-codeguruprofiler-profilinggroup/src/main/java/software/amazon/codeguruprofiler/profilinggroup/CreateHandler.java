@@ -19,6 +19,8 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 public class CreateHandler extends BaseHandler<CallbackContext> {
 
+    private final CodeGuruProfilerClient profilerClient = CodeGuruProfilerClientBuilder.create();
+
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,
@@ -29,8 +31,6 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         final ResourceModel model = request.getDesiredResourceState();
 
         try {
-            CodeGuruProfilerClient profilerClient = CodeGuruProfilerClient.create();
-
             CreateProfilingGroupRequest createProfilingGroupRequest = CreateProfilingGroupRequest.builder()
                     .profilingGroupName(model.getProfilingGroupName())
                     .build();

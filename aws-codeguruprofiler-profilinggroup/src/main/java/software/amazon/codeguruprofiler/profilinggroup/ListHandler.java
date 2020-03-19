@@ -18,6 +18,8 @@ import java.util.List;
 
 public class ListHandler extends BaseHandler<CallbackContext> {
 
+    private final CodeGuruProfilerClient profilerClient = CodeGuruProfilerClientBuilder.create();
+
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,
@@ -28,8 +30,6 @@ public class ListHandler extends BaseHandler<CallbackContext> {
         final List<ResourceModel> models = new ArrayList<>();
 
         try {
-            CodeGuruProfilerClient profilerClient = CodeGuruProfilerClient.create();
-
             ListProfilingGroupsRequest listProfilingGroupsRequest = ListProfilingGroupsRequest.builder()
                     .includeDescription(true)
                     .maxResults(100)

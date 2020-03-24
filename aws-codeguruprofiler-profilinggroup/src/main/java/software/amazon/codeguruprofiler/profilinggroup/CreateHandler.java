@@ -29,10 +29,12 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
+        final String idempotencyToken = request.getClientRequestToken();
 
         try {
             CreateProfilingGroupRequest createProfilingGroupRequest = CreateProfilingGroupRequest.builder()
                     .profilingGroupName(model.getProfilingGroupName())
+                    .clientToken(idempotencyToken)
                     .build();
 
             proxy.injectCredentialsAndInvokeV2(createProfilingGroupRequest, profilerClient::createProfilingGroup);

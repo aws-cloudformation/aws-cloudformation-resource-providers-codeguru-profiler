@@ -63,7 +63,7 @@ public class CreateHandlerTest {
                 .when(proxy).injectCredentialsAndInvokeV2(
                     ArgumentMatchers.eq(CreateProfilingGroupRequest
                         .builder()
-                        .profilingGroupName("IronMan-Suit-34")
+                        .profilingGroupName("IronMan-Suit-34").clientToken("clientTokenXXX")
                         .build()), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response

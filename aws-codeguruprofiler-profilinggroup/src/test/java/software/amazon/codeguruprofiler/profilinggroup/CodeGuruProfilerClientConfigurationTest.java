@@ -10,11 +10,12 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.retry.RetryPolicyContext;
 import software.amazon.awssdk.core.retry.conditions.RetryCondition;
+import software.amazon.awssdk.services.codeguruprofiler.model.ConflictException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
-class CodeGuruProfilerClientConfigurationTest {
+public class CodeGuruProfilerClientConfigurationTest {
 
     @Nested
     class DescribeRetryCondition {
@@ -24,14 +25,17 @@ class CodeGuruProfilerClientConfigurationTest {
         }
 
         @Test
+        public void itShouldNotRetryErrorsWhenClientErrorsNotCausedByAbortedException() {
+            SdkClientException clientException =
+                SdkClientException.create("test", ConflictException.builder().build());
+            assertThat(getRetryCondition().shouldRetry(createRetryContext(clientException))).isFalse();
+        }
+
+        @Test
         public void itShouldRetryClientErrorsCausedByAbortedException() {
             // Until https://github.com/aws/aws-sdk-java-v2/issues/1684 is fixed
             SdkClientException clientException =
-                SdkClientException.builder()
-                    .message("test")
-                    .cause(AbortedException.create("test aborted exception"))
-                    .build();
-
+                SdkClientException.create("test", AbortedException.create("test aborted exception"));
             assertThat(getRetryCondition().shouldRetry(createRetryContext(clientException))).isTrue();
         }
     }

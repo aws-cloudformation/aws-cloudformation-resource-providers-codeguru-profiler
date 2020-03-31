@@ -2,9 +2,13 @@ package software.amazon.codeguruprofiler.profilinggroup;
 
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.internal.retry.SdkDefaultRetrySetting;
+import software.amazon.awssdk.core.exception.AbortedException;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.retry.backoff.BackoffStrategy;
 import software.amazon.awssdk.core.retry.backoff.EqualJitterBackoffStrategy;
+import software.amazon.awssdk.core.retry.conditions.OrRetryCondition;
+import software.amazon.awssdk.core.retry.conditions.RetryCondition;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
@@ -70,7 +74,21 @@ public class CodeGuruProfilerClientBuilder {
                 .backoffStrategy(failureBackoffStrategy)
                 .throttlingBackoffStrategy(throttlingBackoffStrategy)
                 .numRetries(MAX_ERROR_RETRY) // We can be a bit slower in CloudFormation for the sake of not failing the deployment!
+                .retryCondition(getRetryCondition())
                 .build();
+    }
+
+    private static RetryCondition getRetryCondition() {
+        return OrRetryCondition.create(
+                RetryCondition.defaultRetryCondition(), // Pull in SDK defaults
+                retryAbortedExceptionCondition() // https://github.com/aws/aws-sdk-java-v2/issues/1684
+        );
+    }
+
+    private static RetryCondition retryAbortedExceptionCondition() {
+        return c -> c.exception().getClass().equals(SdkClientException.class) &&
+                        c.exception().getCause() != null &&
+                        c.exception().getCause().getClass().equals(AbortedException.class);
     }
 
     private static SdkHttpClient getHttpClient() {
@@ -80,13 +98,17 @@ public class CodeGuruProfilerClientBuilder {
                 .build();
     }
 
+    public static ClientOverrideConfiguration getClientConfiguration() {
+        return ClientOverrideConfiguration.builder()
+                   .retryPolicy(getRetryPolicy())
+                   .apiCallTimeout(OVERALL_TIMEOUT)
+                   .apiCallAttemptTimeout(ATTEMPT_TIMEOUT)
+                   .build();
+    }
+
     public static CodeGuruProfilerClient create() {
         return CodeGuruProfilerClient.builder()
-                .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        .retryPolicy(getRetryPolicy())
-                        .apiCallTimeout(OVERALL_TIMEOUT)
-                        .apiCallAttemptTimeout(ATTEMPT_TIMEOUT)
-                        .build())
+                .overrideConfiguration(getClientConfiguration())
                 .httpClient(getHttpClient())
                 .build();
     }

@@ -3,8 +3,8 @@ package software.amazon.codeguruprofiler.profilinggroup;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.internal.retry.SdkDefaultRetrySetting;
 import software.amazon.awssdk.core.exception.AbortedException;
-import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.retry.RetryPolicy;
+import software.amazon.awssdk.core.retry.RetryPolicyContext;
 import software.amazon.awssdk.core.retry.backoff.BackoffStrategy;
 import software.amazon.awssdk.core.retry.backoff.EqualJitterBackoffStrategy;
 import software.amazon.awssdk.core.retry.conditions.OrRetryCondition;
@@ -81,14 +81,14 @@ public class CodeGuruProfilerClientBuilder {
     private static RetryCondition getRetryCondition() {
         return OrRetryCondition.create(
                 RetryCondition.defaultRetryCondition(), // Pull in SDK defaults
-                retryAbortedExceptionCondition() // https://github.com/aws/aws-sdk-java-v2/issues/1684
+                shouldRetryAbortedException() // https://github.com/aws/aws-sdk-java-v2/issues/1684
         );
     }
 
-    private static RetryCondition retryAbortedExceptionCondition() {
-        return c -> c.exception().getClass().equals(SdkClientException.class) &&
-                        c.exception().getCause() != null &&
-                        c.exception().getCause().getClass().equals(AbortedException.class);
+    private static RetryCondition shouldRetryAbortedException() {
+        return (RetryPolicyContext c) ->
+                   c.exception().getCause() != null &&
+                       c.exception().getCause().getClass().equals(AbortedException.class);
     }
 
     private static SdkHttpClient getHttpClient() {
@@ -98,7 +98,7 @@ public class CodeGuruProfilerClientBuilder {
                 .build();
     }
 
-    public static ClientOverrideConfiguration getClientConfiguration() {
+    static ClientOverrideConfiguration getClientConfiguration() {
         return ClientOverrideConfiguration.builder()
                    .retryPolicy(getRetryPolicy())
                    .apiCallTimeout(OVERALL_TIMEOUT)

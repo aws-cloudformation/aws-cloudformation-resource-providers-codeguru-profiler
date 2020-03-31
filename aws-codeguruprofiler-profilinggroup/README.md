@@ -14,7 +14,7 @@ automatically overwritten.
 After modifying the JSON schema or changing the handlers implementation make sure you do the following before sending a pull-request:
 
 ```
-pre-commit run --all-files && AWS_REGION=us-east-1 mvn clean package
+pre-commit run --all-files && AWS_REGION=us-east-1 mvn clean verify package
 ```
 
 **References**

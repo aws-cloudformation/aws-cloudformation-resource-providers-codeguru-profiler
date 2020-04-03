@@ -29,6 +29,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
+        final String awsAccountId = request.getAwsAccountId();
         final String idempotencyToken = request.getClientRequestToken();
 
         try {
@@ -39,7 +40,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
 
             proxy.injectCredentialsAndInvokeV2(createProfilingGroupRequest, profilerClient::createProfilingGroup);
 
-            logger.log(String.format("%s [%s] has been successfully created!", ResourceModel.TYPE_NAME, model.getProfilingGroupName()));
+            logger.log(String.format("%s [%s] for accountId %s has been successfully created!", ResourceModel.TYPE_NAME, model.getProfilingGroupName(), awsAccountId));
 
             return ProgressEvent.defaultSuccessHandler(model);
         } catch (ConflictException e) {

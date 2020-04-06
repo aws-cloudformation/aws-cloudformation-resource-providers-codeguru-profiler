@@ -28,6 +28,7 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
         final Logger logger) {
 
         final ResourceModel model = request.getDesiredResourceState();
+        final String awsAccountId = request.getAwsAccountId();
 
         try {
             DescribeProfilingGroupRequest describeProfilingGroupRequest = DescribeProfilingGroupRequest.builder()
@@ -38,7 +39,7 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
             model.setProfilingGroupName(response.profilingGroup().name()); // This is not needed but making sure the response is the same as the request!
             model.setArn(response.profilingGroup().arn());
 
-            logger.log(String.format("%s [%s] has been successfully read!", ResourceModel.TYPE_NAME, model.getProfilingGroupName()));
+            logger.log(String.format("%s [%s] for accountId [%s] has been successfully read!", ResourceModel.TYPE_NAME, model.getProfilingGroupName(), awsAccountId));
 
             return ProgressEvent.defaultSuccessHandler(model);
 

@@ -28,6 +28,7 @@ public class ListHandler extends BaseHandler<CallbackContext> {
         final Logger logger) {
 
         final List<ResourceModel> models = new ArrayList<>();
+        final String awsAccountId = request.getAwsAccountId();
 
         try {
             ListProfilingGroupsRequest listProfilingGroupsRequest = ListProfilingGroupsRequest.builder()
@@ -44,7 +45,7 @@ public class ListHandler extends BaseHandler<CallbackContext> {
                             .arn(pg.arn()).build())
             );
 
-            logger.log(String.format("%d \"%s\" has been successfully listed for token %s!", models.size(), ResourceModel.TYPE_NAME, request.getNextToken()));
+            logger.log(String.format("%d \"%s\" for accountId [%s] has been successfully listed for token %s!", models.size(), ResourceModel.TYPE_NAME, awsAccountId, request.getNextToken()));
 
             return ProgressEvent.<ResourceModel, CallbackContext>builder()
                     .resourceModels(models)

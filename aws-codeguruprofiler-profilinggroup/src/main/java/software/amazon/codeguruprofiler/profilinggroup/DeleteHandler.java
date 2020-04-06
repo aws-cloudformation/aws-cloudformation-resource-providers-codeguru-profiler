@@ -36,7 +36,7 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
 
             proxy.injectCredentialsAndInvokeV2(deleteProfilingGroupRequest, profilerClient::deleteProfilingGroup);
 
-            logger.log(String.format("%s [%s] for accountId %s has been successfully deleted!", ResourceModel.TYPE_NAME, model.getProfilingGroupName(), awsAccountId));
+            logger.log(String.format("%s [%s] for accountId [%s] has been successfully deleted!", ResourceModel.TYPE_NAME, model.getProfilingGroupName(), awsAccountId));
 
             return ProgressEvent.defaultSuccessHandler(model);
 

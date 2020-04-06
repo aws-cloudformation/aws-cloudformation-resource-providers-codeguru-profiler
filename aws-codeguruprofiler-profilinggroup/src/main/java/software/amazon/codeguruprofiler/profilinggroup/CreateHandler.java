@@ -40,7 +40,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
 
             proxy.injectCredentialsAndInvokeV2(createProfilingGroupRequest, profilerClient::createProfilingGroup);
 
-            logger.log(String.format("%s [%s] for accountId %s has been successfully created!", ResourceModel.TYPE_NAME, model.getProfilingGroupName(), awsAccountId));
+            logger.log(String.format("%s [%s] for accountId [%s] has been successfully created!", ResourceModel.TYPE_NAME, model.getProfilingGroupName(), awsAccountId));
 
             return ProgressEvent.defaultSuccessHandler(model);
         } catch (ConflictException e) {

@@ -38,7 +38,7 @@ pre-commit run --all-files && AWS_REGION=us-east-1 mvn clean verify package
 
 3. Run the following to register the resource type to your account (only needed after changes) and create the required CloudFormation stacks:
     ```
-    cfn submit -v
+    cfn submit -v --region us-east-1
     ```
 4. Update the default version used by CloudFormation:
     ```

@@ -11,6 +11,8 @@ import software.amazon.awssdk.services.codeguruprofiler.model.CreateProfilingGro
 import software.amazon.awssdk.services.codeguruprofiler.model.CreateProfilingGroupResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ProfilingGroupDescription;
+import software.amazon.awssdk.services.codeguruprofiler.model.PutPermissionRequest;
+import software.amazon.awssdk.services.codeguruprofiler.model.PutPermissionResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.ServiceQuotaExceededException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ThrottlingException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ValidationException;
@@ -25,14 +27,16 @@ import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
+import java.util.Arrays;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeInvalidRequest;
-import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeValidRequest;
+import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.*;
 
 @ExtendWith(MockitoExtension.class)
 public class CreateHandlerTest {
@@ -54,16 +58,25 @@ public class CreateHandlerTest {
     }
 
     @Test
-    public void testSuccessState() {
-        doReturn(CreateProfilingGroupResponse.builder()
+    public void testSuccessStateNoPermissions() {
+        String pgName = "IronMan-Suit-34";
+        String clientToken = "clientTokenXXX";
+
+        // Use Mockito's lenient feature to allow stubbed method to be invoked with different arguments.
+        lenient().doReturn(CreateProfilingGroupResponse.builder()
                 .profilingGroup(ProfilingGroupDescription.builder()
-                        .name("IronMan-Suit-34")
+                        .name(pgName)
                         .build())
                 .build())
                 .when(proxy).injectCredentialsAndInvokeV2(
-                    ArgumentMatchers.eq(CreateProfilingGroupRequest
-                        .builder()
-                        .profilingGroupName("IronMan-Suit-34").clientToken("clientTokenXXX")
+                    ArgumentMatchers.eq(CreateProfilingGroupRequest.builder()
+                        .profilingGroupName(pgName).clientToken(clientToken)
+                        .build()), any());
+
+        lenient().doReturn(PutPermissionResponse.builder()
+                .build())
+                .when(proxy).injectCredentialsAndInvokeV2(
+                    ArgumentMatchers.eq(PutPermissionRequest.builder()
                         .build()), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response
@@ -76,6 +89,38 @@ public class CreateHandlerTest {
         assertThat(response.getResourceModel()).isEqualTo(request.getDesiredResourceState());
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
+    }
+
+    @Test
+    public void testSuccessStatePermissions() {
+        // Use Mockito's lenient feature to allow stubbed method to be invoked with different arguments.
+        lenient().doReturn(CreateProfilingGroupResponse.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(
+                ArgumentMatchers.eq(CreateProfilingGroupRequest.builder().build()), any());
+
+        lenient().doReturn(PutPermissionResponse.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(
+                ArgumentMatchers.eq(PutPermissionRequest.builder().build()), any());
+
+        CreateHandler handler = new CreateHandler();
+
+        assertThat(handler.handleRequest(proxy, newRequestWithPermissions(null), null, logger)).isNotNull();
+
+        Permissions noAgentPermissions = Permissions.builder().agentPermissions(null).build();
+        assertThat(handler.handleRequest(proxy, newRequestWithPermissions(noAgentPermissions), null, logger)).isNotNull();
+
+        Permissions agentPermissions = Permissions.builder().agentPermissions(
+                AgentPermissions.builder().principals(Arrays.asList("a", "bc")).build())
+                .build();
+        assertThat(handler.handleRequest(proxy, newRequestWithPermissions(agentPermissions), null, logger)).isNotNull();
+    }
+
+    private static ResourceHandlerRequest<ResourceModel> newRequestWithPermissions(final Permissions permissions) {
+        return makeRequest(newResourceModel(permissions));
+    }
+
+    private static ResourceModel newResourceModel(final Permissions permissions) {
+        return  ResourceModel.builder().permissions(permissions).build();
     }
 
     @Test

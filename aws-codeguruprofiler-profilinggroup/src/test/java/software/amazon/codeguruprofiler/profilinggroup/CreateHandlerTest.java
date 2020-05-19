@@ -36,7 +36,9 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.*;
+import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeInvalidRequest;
+import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeRequest;
+import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeValidRequest;
 
 @ExtendWith(MockitoExtension.class)
 public class CreateHandlerTest {

@@ -41,11 +41,11 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         Permissions newPermissions = model.getPermissions();
 
         try {
+            GetPolicyResponse getPolicyResponse = getExistingPolicy(proxy, profilingGroupName);
+
             if (newPermissions != null) {
-                // if permission exists in Cfn
-                // TODO: Handle cases when Permission/ AgentPermissions/ Principals contains empty body
                 List<String> principals = newPermissions.getAgentPermissions().getPrincipals();
-                putAgentPermissions(proxy, profilingGroupName, principals);
+                putAgentPermissions(proxy, profilingGroupName, principals, getPolicyResponse.revisionId());
                 logger.log(
                     String.format("Policy for [%s] for accountId [%s] has been successfully updated! actionGroup: %s, principals: %s",
                         profilingGroupName,
@@ -53,16 +53,9 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                         ActionGroup.AGENT_PERMISSIONS,
                         principals)
                 );
-            } else {
-                // if permission does not exist in Cfn
-                GetPolicyRequest getPolicyRequest = GetPolicyRequest.builder().profilingGroupName(profilingGroupName).build();
-                GetPolicyResponse getPolicyResponse = proxy.injectCredentialsAndInvokeV2(getPolicyRequest, profilerClient::getPolicy);
-
-                // If policy does not exist, it would be null
-                if (getPolicyResponse.policy() != null) {
-                    removeAgentPermission(proxy, profilingGroupName, getPolicyResponse.revisionId());
-                    logger.log(String.format("Policy for [%s] for accountId [%s] has been successfully removed!", profilingGroupName, awsAccountId));
-                }
+            } else if(getPolicyResponse.policy() != null) {
+                removeAgentPermission(proxy, profilingGroupName, getPolicyResponse.revisionId());
+                logger.log(String.format("Policy for [%s] for accountId [%s] has been successfully removed!", profilingGroupName, awsAccountId));
             }
 
             logger.log(String.format("%s [%s] for accountId [%s] has been successfully updated!", ResourceModel.TYPE_NAME, model.getProfilingGroupName(), awsAccountId));
@@ -81,13 +74,22 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         }
     }
 
+    private GetPolicyResponse getExistingPolicy(AmazonWebServicesClientProxy proxy, String profilingGroupName) {
+        return proxy.injectCredentialsAndInvokeV2(
+            GetPolicyRequest.builder().profilingGroupName(profilingGroupName).build(),
+            profilerClient::getPolicy
+        );
+    }
+
     private void putAgentPermissions(AmazonWebServicesClientProxy proxy,
                                      String profilingGroupName,
-                                     List<String> principals) {
+                                     List<String> principals,
+                                     String revisionId) {
         PutPermissionRequest putPermissionRequest = PutPermissionRequest.builder()
                                                         .profilingGroupName(profilingGroupName)
                                                         .actionGroup(ActionGroup.AGENT_PERMISSIONS)
                                                         .principals(principals)
+                                                        .revisionId(revisionId)
                                                         .build();
 
         proxy.injectCredentialsAndInvokeV2(putPermissionRequest, profilerClient::putPermission);

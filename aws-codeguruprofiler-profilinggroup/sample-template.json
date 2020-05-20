@@ -2,7 +2,29 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Sample template for the AWS::CodeGuruProfiler::ProfilingGroup resource.",
   "Resources": {
-    "MyRole": {
+    "MyProfilingGroup": {
+      "Type": "AWS::CodeGuruProfiler::ProfilingGroup",
+      "Properties": {
+        "ProfilingGroupName": "MySampleProfilingGroup"
+      }
+    },
+    "MyProfilingGroupWithAgentPermissions": {
+      "Type": "AWS::CodeGuruProfiler::ProfilingGroup",
+      "Properties": {
+        "ProfilingGroupName": "MySampleProfilingGroupWithAgentPermissions",
+        "AgentPermissions": {
+          "Principals": [
+            {
+              "Fn::GetAtt": [
+                "MyProfilingGroupRole",
+                "Arn"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "MyProfilingGroupRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -20,24 +42,6 @@
               ]
             }
           ]
-        }
-      }
-    },
-    "MyProfilingGroup": {
-      "Type": "AWS::CodeGuruProfiler::ProfilingGroup",
-      "Properties": {
-        "ProfilingGroupName": "MySampleProfilingGroup",
-        "Permissions": {
-          "AgentPermissions": {
-            "Principals": [
-              {
-                "Fn::GetAtt": [
-                  "MyRole",
-                  "Arn"
-                ]
-              }
-            ]
-          }
         }
       }
     }

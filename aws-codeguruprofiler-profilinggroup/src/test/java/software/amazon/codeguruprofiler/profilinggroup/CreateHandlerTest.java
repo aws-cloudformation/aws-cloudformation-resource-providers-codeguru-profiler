@@ -3,12 +3,13 @@ package software.amazon.codeguruprofiler.profilinggroup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.services.codeguruprofiler.model.CodeGuruProfilerException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ConflictException;
 import software.amazon.awssdk.services.codeguruprofiler.model.CreateProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.CreateProfilingGroupResponse;
+import software.amazon.awssdk.services.codeguruprofiler.model.DeleteProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ProfilingGroupDescription;
 import software.amazon.awssdk.services.codeguruprofiler.model.PutPermissionRequest;
@@ -32,11 +33,11 @@ import java.util.Arrays;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeInvalidRequest;
+import static org.mockito.Mockito.verify;
 import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeRequest;
 import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeValidRequest;
 
@@ -53,6 +54,7 @@ public class CreateHandlerTest {
 
     @BeforeEach
     public void setup() {
+        // This proxy will use the Mockito's lenient feature to allow stubbed method to be invoked with different arguments.
         proxy = mock(AmazonWebServicesClientProxy.class);
         logger = mock(Logger.class);
 
@@ -64,21 +66,20 @@ public class CreateHandlerTest {
         String pgName = "IronMan-Suit-34";
         String clientToken = "clientTokenXXX";
 
-        // Use Mockito's lenient feature to allow stubbed method to be invoked with different arguments.
         lenient().doReturn(CreateProfilingGroupResponse.builder()
                 .profilingGroup(ProfilingGroupDescription.builder()
                         .name(pgName)
                         .build())
                 .build())
                 .when(proxy).injectCredentialsAndInvokeV2(
-                    ArgumentMatchers.eq(CreateProfilingGroupRequest.builder()
+                eq(CreateProfilingGroupRequest.builder()
                         .profilingGroupName(pgName).clientToken(clientToken)
                         .build()), any());
 
         lenient().doReturn(PutPermissionResponse.builder()
                 .build())
                 .when(proxy).injectCredentialsAndInvokeV2(
-                    ArgumentMatchers.eq(PutPermissionRequest.builder()
+                eq(PutPermissionRequest.builder()
                         .build()), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response
@@ -94,35 +95,81 @@ public class CreateHandlerTest {
     }
 
     @Test
+    public void testCreateProfilingGroupFailed() {
+        lenient().doThrow(ServiceQuotaExceededException.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(CreateProfilingGroupRequest.class), any());
+
+        CreateHandler handler = new CreateHandler();
+        CfnServiceLimitExceededException exception = assertThrows(CfnServiceLimitExceededException.class,
+                () -> handler.handleRequest(proxy, newRequestWithPermissions(null), null, logger));
+        assertThat(exception).hasCauseExactlyInstanceOf(ServiceQuotaExceededException.class);
+    }
+
+    @Test
     public void testSuccessStatePermissions() {
-        // Use Mockito's lenient feature to allow stubbed method to be invoked with different arguments.
         lenient().doReturn(CreateProfilingGroupResponse.builder().build())
-                .when(proxy).injectCredentialsAndInvokeV2(
-                ArgumentMatchers.eq(CreateProfilingGroupRequest.builder().build()), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(CreateProfilingGroupRequest.class), any());
 
         lenient().doReturn(PutPermissionResponse.builder().build())
-                .when(proxy).injectCredentialsAndInvokeV2(
-                ArgumentMatchers.eq(PutPermissionRequest.builder().build()), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(PutPermissionRequest.class), any());
 
         CreateHandler handler = new CreateHandler();
 
         assertThat(handler.handleRequest(proxy, newRequestWithPermissions(null), null, logger)).isNotNull();
 
-        Permissions noAgentPermissions = Permissions.builder().agentPermissions(null).build();
-        assertThat(handler.handleRequest(proxy, newRequestWithPermissions(noAgentPermissions), null, logger)).isNotNull();
+        AgentPermissions noPrincipalsAgentPermissions = AgentPermissions.builder().principals(null).build();
+        assertThat(handler.handleRequest(proxy, newRequestWithPermissions(noPrincipalsAgentPermissions), null, logger)).isNotNull();
 
-        Permissions agentPermissions = Permissions.builder().agentPermissions(
-                AgentPermissions.builder().principals(Arrays.asList("a", "bc")).build())
-                .build();
+        AgentPermissions agentPermissions = AgentPermissions.builder().principals(Arrays.asList("a", "bc")).build();
         assertThat(handler.handleRequest(proxy, newRequestWithPermissions(agentPermissions), null, logger)).isNotNull();
     }
 
-    private static ResourceHandlerRequest<ResourceModel> newRequestWithPermissions(final Permissions permissions) {
+    @Test
+    public void testPutPermissionsFails() {
+        lenient().doReturn(CreateProfilingGroupResponse.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(CreateProfilingGroupRequest.class), any());
+
+        lenient().doThrow(ConflictException.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(PutPermissionRequest.class), any());
+
+        CreateHandler handler = new CreateHandler();
+        AgentPermissions agentPermissions = AgentPermissions.builder().principals(Arrays.asList("a", "bc")).build();
+
+        CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class,
+                () -> handler.handleRequest(proxy, newRequestWithPermissions(agentPermissions), null, logger));
+
+        verify(proxy).injectCredentialsAndInvokeV2(any(DeleteProfilingGroupRequest.class), any());
+        assertThat(exception).hasCauseExactlyInstanceOf(ConflictException.class);
+        assertThat(exception).hasNoSuppressedExceptions();
+    }
+
+    @Test
+    public void testPutPermissionsAndDeleteProfilingGroupFails() {
+        Throwable deleteException = InternalServerException.builder().build();
+        lenient().doReturn(CreateProfilingGroupResponse.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(CreateProfilingGroupRequest.class), any());
+        lenient().doThrow(ConflictException.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(PutPermissionRequest.class), any());
+        lenient().doThrow(deleteException)
+                .when(proxy).injectCredentialsAndInvokeV2(any(DeleteProfilingGroupRequest.class), any());
+
+        CreateHandler handler = new CreateHandler();
+        AgentPermissions agentPermissions = AgentPermissions.builder().principals(Arrays.asList("a", "bc")).build();
+
+        CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class,
+                () -> handler.handleRequest(proxy, newRequestWithPermissions(agentPermissions), null, logger));
+
+        verify(proxy).injectCredentialsAndInvokeV2(any(DeleteProfilingGroupRequest.class), any());
+        assertThat(exception).hasCauseExactlyInstanceOf(ConflictException.class);
+        assertThat(exception.getCause()).hasSuppressedException(deleteException);
+    }
+
+    private static ResourceHandlerRequest<ResourceModel> newRequestWithPermissions(final AgentPermissions permissions) {
         return makeRequest(newResourceModel(permissions));
     }
 
-    private static ResourceModel newResourceModel(final Permissions permissions) {
-        return  ResourceModel.builder().permissions(permissions).build();
+    private static ResourceModel newResourceModel(final AgentPermissions permissions) {
+        return ResourceModel.builder().agentPermissions(permissions).build();
     }
 
     @Test
@@ -167,6 +214,15 @@ public class CreateHandlerTest {
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
         assertThrows(CfnInvalidRequestException.class, () ->
-                new CreateHandler().handleRequest(proxy, makeInvalidRequest(), null, logger));
+                new CreateHandler().handleRequest(proxy, request, null, logger));
+    }
+
+    @Test
+    public void testAnyOtherCodeGuruExceptionException() {
+        doThrow(CodeGuruProfilerException.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+
+        assertThrows(CodeGuruProfilerException.class, () ->
+                new CreateHandler().handleRequest(proxy, request, null, logger));
     }
 }

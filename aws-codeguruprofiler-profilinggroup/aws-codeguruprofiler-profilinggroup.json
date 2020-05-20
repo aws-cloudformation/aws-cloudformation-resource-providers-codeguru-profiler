@@ -20,29 +20,19 @@
       "maxLength": 255,
       "pattern": "^[\\w-]+$"
     },
-    "Permissions": {
-      "description": "The permissions attached for this profiling group.",
+    "AgentPermissions": {
+      "description": "The agent permissions attached to this profiling group.",
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "AgentPermissions"
+        "Principals"
       ],
       "properties": {
-        "AgentPermissions": {
-          "type": "object",
-          "description": "The permissions for the agent.",
-          "additionalProperties": false,
-          "required": [
-            "Principals"
-          ],
-          "properties": {
-            "Principals": {
-              "description": "The principals for the agent permissions.",
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/ArnIam"
-              }
-            }
+        "Principals": {
+          "description": "The principals for the agent permissions.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ArnIam"
           }
         }
       }
@@ -57,8 +47,7 @@
   },
   "additionalProperties": false,
   "required": [
-    "ProfilingGroupName",
-    "Permissions"
+    "ProfilingGroupName"
   ],
   "primaryIdentifier": [
     "/properties/ProfilingGroupName"

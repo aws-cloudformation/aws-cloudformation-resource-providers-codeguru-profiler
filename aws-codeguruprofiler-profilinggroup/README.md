@@ -29,6 +29,8 @@ pre-commit run --all-files && AWS_REGION=us-east-1 mvn clean verify package
 
 ## How do I test this in my account?
 
+#### Through CFN
+
 1. Setup your AWS credentials locally.
 
 2. Initialize the project:
@@ -62,3 +64,7 @@ pre-commit run --all-files && AWS_REGION=us-east-1 mvn clean verify package
     ```
 
 8. Validate the profiling group has been deleted!
+
+#### Through SAM
+
+1. Follow instruction stated on [here](https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/resource-type-walkthrough.html#resource-type-walkthrough-test).

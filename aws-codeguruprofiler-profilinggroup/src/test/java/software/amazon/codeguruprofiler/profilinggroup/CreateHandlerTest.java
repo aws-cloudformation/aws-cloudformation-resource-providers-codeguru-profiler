@@ -2,6 +2,7 @@ package software.amazon.codeguruprofiler.profilinggroup;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,7 @@ import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,6 +43,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static software.amazon.awssdk.services.codeguruprofiler.model.ActionGroup.AGENT_PERMISSIONS;
 import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeRequest;
 import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeValidRequest;
 
@@ -48,31 +51,36 @@ import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.mak
 public class CreateHandlerTest {
 
     @Mock
-    private AmazonWebServicesClientProxy proxy;
+    private AmazonWebServicesClientProxy proxy = mock(AmazonWebServicesClientProxy.class);
 
     @Mock
-    private Logger logger;
+    private Logger logger = mock(Logger.class);
 
-    private CreateHandler subject;
+    private CreateHandler subject = new CreateHandler();
 
     private ResourceHandlerRequest<ResourceModel> request;
 
     private final String profilingGroupName = "Silver-2020";
     private final String clientToken = "clientTokenXXX";
+    private final List<String> principals = Arrays.asList("a", "bc");
+
     private final CreateProfilingGroupRequest createPgRequest = CreateProfilingGroupRequest.builder()
             .profilingGroupName(profilingGroupName)
             .clientToken(clientToken)
             .build();
 
-    @BeforeEach
-    public void setup() {
-        proxy = mock(AmazonWebServicesClientProxy.class);
-        logger = mock(Logger.class);
-        subject = new CreateHandler();
-    }
+    private final PutPermissionRequest putPermissionsRequest = PutPermissionRequest.builder()
+            .profilingGroupName(profilingGroupName)
+            .actionGroup(AGENT_PERMISSIONS)
+            .principals(principals)
+            .build();
+
+    private final DeleteProfilingGroupRequest deleteProfilingGroupRequest = DeleteProfilingGroupRequest.builder()
+            .profilingGroupName(profilingGroupName)
+            .build();
 
     @Nested
-    class WithNoPermissions {
+    class WhenPermissionsAreNotSet {
 
         @BeforeEach
         public void setup() {
@@ -90,7 +98,7 @@ public class CreateHandlerTest {
         public void testSuccess() {
             final ProgressEvent<ResourceModel, CallbackContext> response = subject.handleRequest(proxy, request, null, logger);
 
-            assertResponse(response);
+            assertSuccessfulResponse(response);
         }
 
         @Test
@@ -103,29 +111,29 @@ public class CreateHandlerTest {
     }
 
     @Nested
-    class WithPermissions {
+    class WhenPermissionsAreSet {
 
         @BeforeEach
         public void setup() {
             doReturn(CreateProfilingGroupResponse.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(CreateProfilingGroupRequest.class), any());
+                    .when(proxy).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
         }
 
         @Nested
-        class NoPrincipals {
+        class WhenPrincipalsAreNotSet {
 
             @Test
             public void testNullPermissions() {
                 ResourceModel model = newResourceModel(null);
                 request = makeRequest(model);
-                assertResponse(subject.handleRequest(proxy, request, null, logger));
+                assertSuccessfulResponse(subject.handleRequest(proxy, request, null, logger));
             }
 
             @Test
             public void testNullPrincipals() {
                 ResourceModel model = newResourceModel(AgentPermissions.builder().principals(null).build());
                 request = makeRequest(model);
-                assertResponse(subject.handleRequest(proxy, request, null, logger));
+                assertSuccessfulResponse(subject.handleRequest(proxy, request, null, logger));
             }
 
             @AfterEach
@@ -136,57 +144,47 @@ public class CreateHandlerTest {
         }
 
         @Nested
-        class WithPrincipals {
+        class WhenPrincipalsAreSet {
 
             @BeforeEach
             public void setup() {
-                ResourceModel model = newResourceModel(AgentPermissions.builder().principals(Arrays.asList("a", "bc")).build());
+                ResourceModel model = newResourceModel(AgentPermissions.builder().principals(principals).build());
                 request = makeRequest(model);
             }
 
             @Test
             public void testSuccess() {
-                assertResponse(subject.handleRequest(proxy, request, null, logger));
+                assertSuccessfulResponse(subject.handleRequest(proxy, request, null, logger));
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
-                verify(proxy, times(1)).injectCredentialsAndInvokeV2(any(PutPermissionRequest.class), any());
+                verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(putPermissionsRequest), any());
                 verifyNoMoreInteractions(proxy);
             }
 
             @Test
-            public void testPutPermissionsFails() {
+            public void testPutPermissionsFailsAssertExceptionType() {
                 doThrow(ConflictException.builder().build())
-                        .when(proxy).injectCredentialsAndInvokeV2(any(PutPermissionRequest.class), any());
+                        .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionsRequest), any());
 
                 CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class,
                         () -> subject.handleRequest(proxy, request, null, logger));
 
                 assertThat(exception).hasCauseExactlyInstanceOf(ConflictException.class);
                 assertThat(exception).hasNoSuppressedExceptions();
-
-                verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
-                verify(proxy, times(1)).injectCredentialsAndInvokeV2(any(PutPermissionRequest.class), any());
-                verify(proxy).injectCredentialsAndInvokeV2(any(DeleteProfilingGroupRequest.class), any());
-                verifyNoMoreInteractions(proxy);
             }
 
             @Test
-            public void testPutPermissionsFailsAndDeleteProfilingGroupFails() {
+            public void testPutPermissionsFailsAndDeleteProfilingGroupFailsAssertExceptionType() {
                 Throwable deleteException = InternalServerException.builder().build();
                 doThrow(ConflictException.builder().build())
-                        .when(proxy).injectCredentialsAndInvokeV2(any(PutPermissionRequest.class), any());
+                        .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionsRequest), any());
                 doThrow(deleteException)
-                        .when(proxy).injectCredentialsAndInvokeV2(any(DeleteProfilingGroupRequest.class), any());
+                        .when(proxy).injectCredentialsAndInvokeV2(eq(deleteProfilingGroupRequest), any());
 
                 CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class,
                         () -> subject.handleRequest(proxy, request, null, logger));
 
                 assertThat(exception).hasCauseExactlyInstanceOf(ConflictException.class);
                 assertThat(exception.getCause()).hasSuppressedException(deleteException);
-
-                verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
-                verify(proxy, times(1)).injectCredentialsAndInvokeV2(any(PutPermissionRequest.class), any());
-                verify(proxy, times(1)).injectCredentialsAndInvokeV2(any(DeleteProfilingGroupRequest.class), any());
-                verifyNoMoreInteractions(proxy);
             }
         }
     }
@@ -266,7 +264,7 @@ public class CreateHandlerTest {
                 .build();
     }
 
-    private void assertResponse(ProgressEvent<ResourceModel, CallbackContext> response) {
+    private void assertSuccessfulResponse(ProgressEvent<ResourceModel, CallbackContext> response) {
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
         assertThat(response.getCallbackContext()).isNull();

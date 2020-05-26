@@ -27,6 +27,7 @@ Resources:
                 - "codeguru-profiler:DeleteProfilingGroup"
                 - "codeguru-profiler:DescribeProfilingGroup"
                 - "codeguru-profiler:ListProfilingGroups"
+                - "codeguru-profiler:PutPermission"
                 Resource: "*"
 Outputs:
   ExecutionRoleArn:

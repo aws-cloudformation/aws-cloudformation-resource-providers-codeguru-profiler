@@ -44,12 +44,12 @@ import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.mak
 
 public class UpdateHandlerTest {
     @Mock
-    private AmazonWebServicesClientProxy proxy;
+    private AmazonWebServicesClientProxy proxy = mock(AmazonWebServicesClientProxy.class);
 
     @Mock
-    private Logger logger;
+    private Logger logger = mock(Logger.class);
 
-    private UpdateHandler subject;
+    private UpdateHandler subject = new UpdateHandler();
 
     private ResourceHandlerRequest<ResourceModel> request;
 
@@ -61,13 +61,6 @@ public class UpdateHandlerTest {
         GetPolicyRequest.builder().profilingGroupName(profilingGroupName).build();
 
     private final List<String> principals = Arrays.asList("arn:aws:iam::123456789012:role/UnitTestRole");
-
-    @BeforeEach
-    public void setup() {
-        proxy = mock(AmazonWebServicesClientProxy.class);
-        logger = mock(Logger.class);
-        subject = new UpdateHandler();
-    }
 
     @Nested
     class WhenNoPermissionsIsProvided {
@@ -83,7 +76,6 @@ public class UpdateHandlerTest {
             final ProgressEvent<ResourceModel, CallbackContext> response
                 = subject.handleRequest(proxy, request, null, logger);
 
-            assertThat(response).isNotNull();
             assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
             assertThat(response.getCallbackContext()).isNull();
             assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
@@ -93,7 +85,7 @@ public class UpdateHandlerTest {
         }
 
         @Test
-        public void testCorrectOperationIsCalled() {
+        public void itOnlyCallsGetPolicy() {
             subject.handleRequest(proxy, request, null, logger);
 
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
@@ -113,7 +105,7 @@ public class UpdateHandlerTest {
             }
 
             @Test
-            public void testCorrectOperationsAreCalled() {
+            public void itCallsGetPolicyAndRemovePermissions() {
                 subject.handleRequest(proxy, request, null, logger);
 
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
@@ -144,15 +136,7 @@ public class UpdateHandlerTest {
             request =  makeRequest(
                 ResourceModel.builder()
                     .profilingGroupName(profilingGroupName)
-                    .permissions(
-                        Permissions.builder()
-                            .agentPermissions(
-                                AgentPermissions.builder()
-                                    .principals(principals)
-                                    .build()
-                            )
-                            .build()
-                    )
+                    .agentPermissions(AgentPermissions.builder().principals(principals).build())
                     .build()
             );
             doReturn(GetPolicyResponse.builder().build())
@@ -166,7 +150,6 @@ public class UpdateHandlerTest {
             final ProgressEvent<ResourceModel, CallbackContext> response
                 = subject.handleRequest(proxy, request, null, logger);
 
-            assertThat(response).isNotNull();
             assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
             assertThat(response.getCallbackContext()).isNull();
             assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
@@ -176,7 +159,7 @@ public class UpdateHandlerTest {
         }
 
         @Test
-        public void testCorrectOperationsAreCalled() {
+        public void itCallsGetPolicyAndPutPermissions() {
             subject.handleRequest(proxy, request, null, logger);
 
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
@@ -207,7 +190,7 @@ public class UpdateHandlerTest {
             }
 
             @Test
-            public void testCorrectOperationsAreCalled() {
+            public void itCallsGetPolicyAndPutPermission() {
                 subject.handleRequest(proxy, request, null, logger);
 
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
@@ -225,7 +208,7 @@ public class UpdateHandlerTest {
         }
 
         @Test
-        public void testConflictException() {
+        public void itThrowsConflictException() {
             doThrow(ConflictException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
@@ -233,7 +216,7 @@ public class UpdateHandlerTest {
         }
 
         @Test
-        public void testNotFoundException() {
+        public void itThrowsNotFoundException() {
             doThrow(ResourceNotFoundException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
@@ -241,7 +224,7 @@ public class UpdateHandlerTest {
         }
 
         @Test
-        public void testInternalServerException() {
+        public void itThrowsInternalServerException() {
             doThrow(InternalServerException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
@@ -249,7 +232,7 @@ public class UpdateHandlerTest {
         }
 
         @Test
-        public void testThrottlingException() {
+        public void itThrowsThrottlingException() {
             doThrow(ThrottlingException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
@@ -257,7 +240,7 @@ public class UpdateHandlerTest {
         }
 
         @Test
-        public void testValidationException() {
+        public void itThrowsValidationException() {
             doThrow(ValidationException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 

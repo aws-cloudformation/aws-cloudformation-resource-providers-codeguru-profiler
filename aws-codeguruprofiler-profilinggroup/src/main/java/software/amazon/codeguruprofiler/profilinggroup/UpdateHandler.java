@@ -22,6 +22,7 @@ import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 import java.util.List;
+import java.util.Optional;
 
 public class UpdateHandler extends BaseHandler<CallbackContext> {
 
@@ -38,22 +39,21 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         final String awsAccountId = request.getAwsAccountId();
         final String profilingGroupName = model.getProfilingGroupName();
 
-        Permissions newPermissions = model.getPermissions();
+        Optional<List<String>> principals = principalsForAgentPermissionsFrom(model);
 
         try {
             GetPolicyResponse getPolicyResponse = getExistingPolicy(proxy, profilingGroupName);
 
-            if (newPermissions != null) {
-                List<String> principals = newPermissions.getAgentPermissions().getPrincipals();
-                putAgentPermissions(proxy, profilingGroupName, principals, getPolicyResponse.revisionId());
+            if (principals.isPresent()) {
+                putAgentPermissions(proxy, profilingGroupName, principals.get(), getPolicyResponse.revisionId());
                 logger.log(
                     String.format("Policy for [%s] for accountId [%s] has been successfully updated! actionGroup: %s, principals: %s",
                         profilingGroupName,
                         awsAccountId,
                         ActionGroup.AGENT_PERMISSIONS,
-                        principals)
+                        principals.get())
                 );
-            } else if(getPolicyResponse.policy() != null) {
+            } else if (getPolicyResponse.policy() != null) {
                 removeAgentPermission(proxy, profilingGroupName, getPolicyResponse.revisionId());
                 logger.log(String.format("Policy for [%s] for accountId [%s] has been successfully removed!", profilingGroupName, awsAccountId));
             }
@@ -105,5 +105,15 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                                                               .build();
 
         proxy.injectCredentialsAndInvokeV2(removePermissionRequest, profilerClient::removePermission);
+    }
+
+    private static Optional<List<String>> principalsForAgentPermissionsFrom(final ResourceModel model) {
+        if (model.getAgentPermissions() == null) {
+            return Optional.empty();
+        }
+        if (model.getAgentPermissions().getPrincipals() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(model.getAgentPermissions().getPrincipals());
     }
 }

@@ -70,6 +70,13 @@
         "codeguru-profiler:DescribeProfilingGroup"
       ]
     },
+    "update": {
+      "permissions": [
+        "codeguru-profiler:PutPermission",
+        "codeguru-profiler:RemovePermission",
+        "codeguru-profiler:GetPolicy"
+      ]
+    },
     "delete": {
       "permissions": [
         "codeguru-profiler:DeleteProfilingGroup"

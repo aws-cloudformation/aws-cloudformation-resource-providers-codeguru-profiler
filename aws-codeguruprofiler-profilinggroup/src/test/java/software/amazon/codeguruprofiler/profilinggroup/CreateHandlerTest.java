@@ -2,7 +2,6 @@ package software.amazon.codeguruprofiler.profilinggroup;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,10 +86,8 @@ public class CreateHandlerTest {
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).build());
 
             doReturn(CreateProfilingGroupResponse.builder()
-                    .profilingGroup(ProfilingGroupDescription.builder()
-                            .name(profilingGroupName)
-                            .build())
-                    .build())
+                         .profilingGroup(ProfilingGroupDescription.builder().name(profilingGroupName).build())
+                         .build())
                     .when(proxy).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
         }
 
@@ -102,7 +99,7 @@ public class CreateHandlerTest {
         }
 
         @Test
-        public void testCorrectOperationIsCalled() {
+        public void itOnlyCallsCreatePG() {
             subject.handleRequest(proxy, request, null, logger);
 
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
@@ -116,28 +113,28 @@ public class CreateHandlerTest {
         @BeforeEach
         public void setup() {
             doReturn(CreateProfilingGroupResponse.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
+                .when(proxy).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
         }
 
         @Nested
         class WhenPrincipalsAreNotSet {
 
             @Test
-            public void testNullPermissions() {
+            public void itSucceedsWithNullPermissions() {
                 ResourceModel model = newResourceModel(null);
                 request = makeRequest(model);
                 assertSuccessfulResponse(subject.handleRequest(proxy, request, null, logger));
             }
 
             @Test
-            public void testNullPrincipals() {
+            public void itSucceedsWithNullPrincipals() {
                 ResourceModel model = newResourceModel(AgentPermissions.builder().principals(null).build());
                 request = makeRequest(model);
                 assertSuccessfulResponse(subject.handleRequest(proxy, request, null, logger));
             }
 
             @AfterEach
-            public void testCorrectOperationIsCalled() {
+            public void itOnlyCallsCreatePG() {
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
                 verifyNoMoreInteractions(proxy);
             }
@@ -155,36 +152,47 @@ public class CreateHandlerTest {
             @Test
             public void testSuccess() {
                 assertSuccessfulResponse(subject.handleRequest(proxy, request, null, logger));
+            }
+
+            @Test
+            public void itCallsCreatePGAndPutPermissions() {
+                subject.handleRequest(proxy, request, null, logger);
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(putPermissionsRequest), any());
                 verifyNoMoreInteractions(proxy);
             }
 
-            @Test
-            public void testPutPermissionsFailsAssertExceptionType() {
-                doThrow(ConflictException.builder().build())
+            @Nested
+            class WhenPutPermissionsFails {
+                @Test
+                public void itThrowsExceptionWithNoSuppressedExceptionFromUnderlyingDeletePGAction() {
+                    doThrow(ConflictException.builder().build())
                         .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionsRequest), any());
 
-                CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class,
+                    CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class,
                         () -> subject.handleRequest(proxy, request, null, logger));
 
-                assertThat(exception).hasCauseExactlyInstanceOf(ConflictException.class);
-                assertThat(exception).hasNoSuppressedExceptions();
-            }
+                    assertThat(exception).hasCauseExactlyInstanceOf(ConflictException.class);
+                    assertThat(exception).hasNoSuppressedExceptions();
+                }
 
-            @Test
-            public void testPutPermissionsFailsAndDeleteProfilingGroupFailsAssertExceptionType() {
-                Throwable deleteException = InternalServerException.builder().build();
-                doThrow(ConflictException.builder().build())
-                        .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionsRequest), any());
-                doThrow(deleteException)
-                        .when(proxy).injectCredentialsAndInvokeV2(eq(deleteProfilingGroupRequest), any());
+                @Nested
+                class WhenDeletePGFails {
+                    @Test
+                    public void itThrowsExceptionWithSuppressedExceptionFromUnderlyingDeletePGAction() {
+                        Throwable deleteException = InternalServerException.builder().build();
+                        doThrow(ConflictException.builder().build())
+                            .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionsRequest), any());
+                        doThrow(deleteException)
+                            .when(proxy).injectCredentialsAndInvokeV2(eq(deleteProfilingGroupRequest), any());
 
-                CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class,
-                        () -> subject.handleRequest(proxy, request, null, logger));
+                        CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class,
+                            () -> subject.handleRequest(proxy, request, null, logger));
 
-                assertThat(exception).hasCauseExactlyInstanceOf(ConflictException.class);
-                assertThat(exception.getCause()).hasSuppressedException(deleteException);
+                        assertThat(exception).hasCauseExactlyInstanceOf(ConflictException.class);
+                        assertThat(exception.getCause()).hasSuppressedException(deleteException);
+                    }
+                }
             }
         }
     }
@@ -198,74 +206,71 @@ public class CreateHandlerTest {
         }
 
         @Test
-        public void testConflictException() {
-            doThrow(ConflictException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+        public void itThrowsConflictException() {
+            doThrow(ConflictException.builder().build()).when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
-            CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class, () -> subject.handleRequest(proxy, request, null, logger));
+            CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class,
+                () -> subject.handleRequest(proxy, request, null, logger));
             assertThat(exception).hasCauseExactlyInstanceOf(ConflictException.class);
         }
 
         @Test
-        public void testServiceQuotaExceededException() {
+        public void itThrowsServiceQuotaExceededException() {
             doThrow(ServiceQuotaExceededException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
-            CfnServiceLimitExceededException exception = assertThrows(CfnServiceLimitExceededException.class, () ->
-                    subject.handleRequest(proxy, request, null, logger));
+            CfnServiceLimitExceededException exception = assertThrows(CfnServiceLimitExceededException.class,
+                () -> subject.handleRequest(proxy, request, null, logger));
             assertThat(exception).hasCauseExactlyInstanceOf(ServiceQuotaExceededException.class);
         }
 
         @Test
-        public void testInternalServerException() {
+        public void itThrowsInternalServerException() {
             doThrow(InternalServerException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
-            CfnServiceInternalErrorException exception = assertThrows(CfnServiceInternalErrorException.class, () ->
-                    subject.handleRequest(proxy, request, null, logger));
+            CfnServiceInternalErrorException exception = assertThrows(CfnServiceInternalErrorException.class,
+                () -> subject.handleRequest(proxy, request, null, logger));
             assertThat(exception).hasCauseExactlyInstanceOf(InternalServerException.class);
         }
 
         @Test
-        public void testThrottlingException() {
+        public void itThrowsThrottlingException() {
             doThrow(ThrottlingException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
-            CfnThrottlingException exception = assertThrows(CfnThrottlingException.class, () ->
-                    subject.handleRequest(proxy, request, null, logger));
+            CfnThrottlingException exception = assertThrows(CfnThrottlingException.class,
+                () -> subject.handleRequest(proxy, request, null, logger));
             assertThat(exception).hasCauseExactlyInstanceOf(ThrottlingException.class);
         }
 
         @Test
-        public void testValidationException() {
-            doThrow(ValidationException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+        public void itThrowsValidationException() {
+            doThrow(ValidationException.builder().build()).when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
-            CfnInvalidRequestException exception = assertThrows(CfnInvalidRequestException.class, () ->
-                    subject.handleRequest(proxy, request, null, logger));
+            CfnInvalidRequestException exception = assertThrows(CfnInvalidRequestException.class,
+                () -> subject.handleRequest(proxy, request, null, logger));
             assertThat(exception).hasCauseExactlyInstanceOf(ValidationException.class);
         }
 
         @Test
-        public void testAnyOtherCodeGuruExceptionException() {
-            doThrow(CodeGuruProfilerException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+        public void itThrowsAnyOtherCodeGuruExceptionException() {
+            doThrow(CodeGuruProfilerException.builder().build()).when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
-            CodeGuruProfilerException exception = assertThrows(CodeGuruProfilerException.class, () ->
-                    subject.handleRequest(proxy, request, null, logger));
+            CodeGuruProfilerException exception = assertThrows(CodeGuruProfilerException.class,
+                () -> subject.handleRequest(proxy, request, null, logger));
             assertThat(exception).hasNoCause();
         }
     }
 
     private ResourceModel newResourceModel(final AgentPermissions permissions) {
         return ResourceModel.builder()
-                .profilingGroupName(profilingGroupName)
-                .agentPermissions(permissions)
-                .build();
+                   .profilingGroupName(profilingGroupName)
+                   .agentPermissions(permissions)
+                   .build();
     }
 
     private void assertSuccessfulResponse(ProgressEvent<ResourceModel, CallbackContext> response) {
-        assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
         assertThat(response.getCallbackContext()).isNull();
         assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);

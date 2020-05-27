@@ -53,7 +53,7 @@ pre-commit run --all-files && AWS_REGION=us-east-1 mvn clean verify package
 
 5. Create a sample CloudFormation stack that defines a profiling group:
     ```
-    aws cloudformation create-stack --region us-east-1 --template-body "file://sample-template.json" --stack-name "sample-profiling-group-resource-creation"
+    aws cloudformation create-stack --region us-east-1 --template-body "file://sample-template.json" --stack-name "sample-profiling-group-resource-creation" --capabilities CAPABILITY_IAM
     ```
 
 6. Validate the creation of the profiling group!

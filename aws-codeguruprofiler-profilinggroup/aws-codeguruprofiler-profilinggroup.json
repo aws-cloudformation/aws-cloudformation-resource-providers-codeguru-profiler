@@ -6,6 +6,10 @@
     "Arn": {
       "type": "string",
       "pattern": "^arn:aws(-(cn|gov))?:[a-z-]+:(([a-z]+-)+[0-9]+):([0-9]{12}):[^.]+$"
+    },
+    "ArnIam": {
+      "type": "string",
+      "pattern": "^arn:aws(-(cn|gov))?:iam::([0-9]{12}):[^.]+$"
     }
   },
   "properties": {
@@ -15,6 +19,23 @@
       "minLength": 1,
       "maxLength": 255,
       "pattern": "^[\\w-]+$"
+    },
+    "AgentPermissions": {
+      "description": "The agent permissions attached to this profiling group.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Principals"
+      ],
+      "properties": {
+        "Principals": {
+          "description": "The principals for the agent permissions.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ArnIam"
+          }
+        }
+      }
     },
     "Arn": {
       "description": "The Amazon Resource Name (ARN) of the specified profiling group.",
@@ -40,12 +61,20 @@
   "handlers": {
     "create": {
       "permissions": [
-        "codeguru-profiler:CreateProfilingGroup"
+        "codeguru-profiler:CreateProfilingGroup",
+        "codeguru-profiler:PutPermission"
       ]
     },
     "read": {
       "permissions": [
         "codeguru-profiler:DescribeProfilingGroup"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "codeguru-profiler:PutPermission",
+        "codeguru-profiler:RemovePermission",
+        "codeguru-profiler:GetPolicy"
       ]
     },
     "delete": {

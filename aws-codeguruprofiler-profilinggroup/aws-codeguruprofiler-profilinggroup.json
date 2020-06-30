@@ -20,6 +20,14 @@
       "maxLength": 255,
       "pattern": "^[\\w-]+$"
     },
+    "ComputePlatform": {
+      "description": "The compute platform of the profiling group.",
+      "type": "string",
+      "enum": [
+        "Default",
+        "AWSLambda"
+      ]
+    },
     "AgentPermissions": {
       "description": "The agent permissions attached to this profiling group.",
       "type": "object",

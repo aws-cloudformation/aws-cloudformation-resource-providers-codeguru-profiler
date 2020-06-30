@@ -5,6 +5,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.codeguruprofiler.model.CodeGuruProfilerException;
@@ -194,6 +196,27 @@ public class CreateHandlerTest {
                     }
                 }
             }
+        }
+    }
+
+    @Nested
+    class WhenComputePlatformIsSet {
+        @ParameterizedTest
+        @ValueSource(strings = {"Default", "AWSLambda"})
+        public void itSucceedsWithValidComputePlatformString(String computePlatform) {
+            CreateProfilingGroupRequest createProfilingGroupRequest = CreateProfilingGroupRequest.builder()
+                .profilingGroupName(profilingGroupName)
+                .computePlatform(computePlatform)
+                .clientToken(clientToken)
+                .build();
+
+            request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName)
+                .computePlatform(computePlatform).build());
+
+            assertSuccessfulResponse(subject.handleRequest(proxy, request, null, logger));
+
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(createProfilingGroupRequest), any());
+            verifyNoMoreInteractions(proxy);
         }
     }
 

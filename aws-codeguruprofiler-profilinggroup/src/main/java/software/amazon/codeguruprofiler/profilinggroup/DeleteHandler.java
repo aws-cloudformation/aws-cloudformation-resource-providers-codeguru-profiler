@@ -1,5 +1,7 @@
 package software.amazon.codeguruprofiler.profilinggroup;
 
+import static software.amazon.codeguruprofiler.profilinggroup.NotificationChannelHelper.deleteNotificationChannelsForProfilingGroup;
+
 import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
 import software.amazon.awssdk.services.codeguruprofiler.model.DeleteProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
@@ -28,15 +30,18 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
 
         final ResourceModel model = request.getDesiredResourceState();
         final String awsAccountId = request.getAwsAccountId();
+        final String profilingGroupName = model.getProfilingGroupName();
 
         try {
             DeleteProfilingGroupRequest deleteProfilingGroupRequest = DeleteProfilingGroupRequest.builder()
-                    .profilingGroupName(model.getProfilingGroupName())
+                    .profilingGroupName(profilingGroupName)
                     .build();
 
             proxy.injectCredentialsAndInvokeV2(deleteProfilingGroupRequest, profilerClient::deleteProfilingGroup);
 
-            logger.log(String.format("%s [%s] for accountId [%s] has been successfully deleted!", ResourceModel.TYPE_NAME, model.getProfilingGroupName(), awsAccountId));
+            deleteNotificationChannelsForProfilingGroup(profilingGroupName, proxy, profilerClient);
+
+            logger.log(String.format("%s [%s] for accountId [%s] has been successfully deleted!", ResourceModel.TYPE_NAME, profilingGroupName, awsAccountId));
 
             return ProgressEvent.defaultSuccessHandler(model);
 
@@ -50,4 +55,5 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
             throw new CfnInvalidRequestException(ResourceModel.TYPE_NAME + e.getMessage(), e);
         }
     }
+
 }

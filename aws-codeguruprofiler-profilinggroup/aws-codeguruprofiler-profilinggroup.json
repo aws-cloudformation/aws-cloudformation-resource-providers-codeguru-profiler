@@ -10,6 +10,35 @@
     "ArnIam": {
       "type": "string",
       "pattern": "^arn:aws(-(cn|gov))?:iam::([0-9]{12}):[^.]+$"
+    },
+    "ChannelId": {
+      "type": "string"
+    },
+    "ChannelUri": {
+      "description": "The Amazon Resource Name (ARN) of the specified SNS Topic.",
+      "type": "string",
+      "pattern": "^arn:aws(-(cn|gov))?:[a-z-]+:(([a-z]+-)+[0-9]+):([0-9]{12}):[^.]+$"
+    },
+    "Channel": {
+      "type": "object",
+      "required": [
+        "channelUri",
+        "eventPublishers"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/ChannelId"
+        },
+        "channelUri": {
+          "$ref": "#/definitions/ChannelUri"
+        },
+        "eventPublishers": {
+          "type": "string",
+          "enum": [
+            "AnomalyDetection"
+          ]
+        }
+      }
     }
   },
   "properties": {
@@ -45,6 +74,20 @@
         }
       }
     },
+    "AnomalyDetectionNotificationConfiguration": {
+      "description": "Notification medium for users to get alerted for events that occur in application profile. We support SNS topic as a notification channel.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Channels": {
+          "description": "Channels",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Channel"
+          }
+        }
+      }
+    },
     "Arn": {
       "description": "The Amazon Resource Name (ARN) of the specified profiling group.",
       "$ref": "#/definitions/Arn",
@@ -70,6 +113,8 @@
   "handlers": {
     "create": {
       "permissions": [
+        "sns:Publish",
+        "codeguru-profiler:AddNotificationChannels",
         "codeguru-profiler:CreateProfilingGroup",
         "codeguru-profiler:PutPermission"
       ]
@@ -81,6 +126,9 @@
     },
     "update": {
       "permissions": [
+        "sns:Publish",
+        "codeguru-profiler:AddNotificationChannels",
+        "codeguru-profiler:RemoveNotificationChannel",
         "codeguru-profiler:PutPermission",
         "codeguru-profiler:RemovePermission",
         "codeguru-profiler:GetPolicy"
@@ -88,6 +136,9 @@
     },
     "delete": {
       "permissions": [
+        "sns:Publish",
+        "codeguru-profiler:GetNotificationConfiguration",
+        "codeguru-profiler:RemoveNotificationChannel",
         "codeguru-profiler:DeleteProfilingGroup"
       ]
     },

@@ -1,5 +1,12 @@
 package software.amazon.codeguruprofiler.profilinggroup;
 
+import static java.lang.String.format;
+import static software.amazon.awssdk.services.codeguruprofiler.model.ActionGroup.AGENT_PERMISSIONS;
+import static software.amazon.codeguruprofiler.profilinggroup.NotificationChannelHelper.addChannelNotifications;
+
+import java.util.List;
+import java.util.Optional;
+
 import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
 import software.amazon.awssdk.services.codeguruprofiler.model.CodeGuruProfilerException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ConflictException;
@@ -19,12 +26,6 @@ import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
-
-import java.util.List;
-import java.util.Optional;
-
-import static java.lang.String.format;
-import static software.amazon.awssdk.services.codeguruprofiler.model.ActionGroup.AGENT_PERMISSIONS;
 
 public class CreateHandler extends BaseHandler<CallbackContext> {
 
@@ -59,6 +60,18 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             logger.log(format("%s [%s] for accountId [%s] has been successfully updated with agent permissions!",
                 ResourceModel.TYPE_NAME, pgName, awsAccountId));
         }
+
+        Optional<AnomalyDetectionNotificationConfiguration> anomalyDetectionNotificationConfiguration = anomalyDetectionNotificationConfiguration(model);
+        anomalyDetectionNotificationConfiguration.ifPresent(notificationConfiguration -> safelyInvokeApi(() -> {
+            try {
+                addChannelNotifications(pgName, notificationConfiguration.getChannels(), proxy, profilerClient);
+            } catch (CodeGuruProfilerException addChannelNotificationException) {
+                logger.log(format("%s [%s] for accountId [%s] has failed when adding Channel Notification, trying to delete the profiling group!",
+                        ResourceModel.TYPE_NAME, pgName, awsAccountId));
+                deleteProfilingGroup(proxy, logger, pgName, awsAccountId, addChannelNotificationException);
+                throw addChannelNotificationException;
+            }
+        }));
 
         return ProgressEvent.defaultSuccessHandler(model);
     }
@@ -122,5 +135,17 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             return Optional.empty();
         }
         return Optional.of(model.getAgentPermissions().getPrincipals());
+    }
+
+    private static Optional<AnomalyDetectionNotificationConfiguration> anomalyDetectionNotificationConfiguration(final ResourceModel model) {
+        if (model.getAnomalyDetectionNotificationConfiguration() == null ) {
+            return Optional.empty();
+        }
+
+        if (model.getAnomalyDetectionNotificationConfiguration().getChannels() == null) {
+            return Optional.empty();
+        }
+
+        return Optional.of(model.getAnomalyDetectionNotificationConfiguration());
     }
 }

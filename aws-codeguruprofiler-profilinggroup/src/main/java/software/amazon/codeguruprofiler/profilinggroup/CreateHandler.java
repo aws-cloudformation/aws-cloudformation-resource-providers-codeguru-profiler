@@ -42,16 +42,14 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         final String pgName = model.getProfilingGroupName();
         final String computePlatform = model.getComputePlatform();
 
-        CreateProfilingGroupRequest.Builder createProfilingGroupRequestBuilder = CreateProfilingGroupRequest.builder()
+        CreateProfilingGroupRequest createProfilingGroupRequest = CreateProfilingGroupRequest.builder()
             .profilingGroupName(pgName)
-            .clientToken(request.getClientRequestToken());
-
-        if (computePlatform != null) {
-            createProfilingGroupRequestBuilder.computePlatform(computePlatform);
-        }
+            .computePlatform(computePlatform)
+            .clientToken(request.getClientRequestToken())
+            .build();
 
         safelyInvokeApi(() -> {
-            proxy.injectCredentialsAndInvokeV2(createProfilingGroupRequestBuilder.build(), profilerClient::createProfilingGroup);
+            proxy.injectCredentialsAndInvokeV2(createProfilingGroupRequest, profilerClient::createProfilingGroup);
         });
         logger.log(format("%s [%s] for accountId [%s] has been successfully created!", ResourceModel.TYPE_NAME, pgName, awsAccountId));
 

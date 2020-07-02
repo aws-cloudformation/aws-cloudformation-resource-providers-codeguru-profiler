@@ -71,4 +71,4 @@ pre-commit run --all-files && AWS_REGION=us-east-1 mvn clean verify package
 
 #### Dealing with CI Failures
 If outside of Amazon, you will not be able to see the CI outputs. Our reviewers will be responsible for making that
-information available to you. Reviewers, you can find info on how to get CI outputs at [link](https://tinyurl.com/yagdpv7q).
+information available to you. Reviewers, you can find info on how to get CI outputs at [link](https://tiny.amazon.com/1in0t4ata).

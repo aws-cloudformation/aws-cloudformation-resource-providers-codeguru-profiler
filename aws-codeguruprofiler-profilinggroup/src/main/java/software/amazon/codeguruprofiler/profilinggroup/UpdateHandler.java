@@ -2,7 +2,9 @@ package software.amazon.codeguruprofiler.profilinggroup;
 
 import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
 import software.amazon.awssdk.services.codeguruprofiler.model.ActionGroup;
+import software.amazon.awssdk.services.codeguruprofiler.model.ComputePlatform;
 import software.amazon.awssdk.services.codeguruprofiler.model.ConflictException;
+import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.GetPolicyRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.GetPolicyResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
@@ -33,7 +35,8 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         AmazonWebServicesClientProxy proxy,
         ResourceHandlerRequest<ResourceModel> request,
         CallbackContext callbackContext,
-        Logger logger) {
+        Logger logger
+    ) {
         final ResourceModel model = request.getDesiredResourceState();
 
         final String awsAccountId = request.getAwsAccountId();
@@ -42,6 +45,8 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         Optional<List<String>> principals = principalsForAgentPermissionsFrom(model);
 
         try {
+            validateComputePlatform(proxy, profilingGroupName, model.getComputePlatform());
+
             GetPolicyResponse getPolicyResponse = getExistingPolicy(proxy, profilingGroupName);
 
             if (principals.isPresent()) {
@@ -74,11 +79,30 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         }
     }
 
+    private void validateComputePlatform(AmazonWebServicesClientProxy proxy, String profilingGroupName, String computePlatform) {
+        String existingComputePlatform = getExistingComputePlatform(proxy, profilingGroupName);
+        String newComputePlatform = computePlatform == null ? ComputePlatform.DEFAULT.toString() : computePlatform;
+
+        if (!existingComputePlatform.equals(newComputePlatform)) {
+            throw new CfnInvalidRequestException(
+                String.format("Compute platform for profiling group %s is %s and it cannot be changed to %s",
+                    profilingGroupName, existingComputePlatform, newComputePlatform)
+            );
+        }
+    }
+
     private GetPolicyResponse getExistingPolicy(AmazonWebServicesClientProxy proxy, String profilingGroupName) {
         return proxy.injectCredentialsAndInvokeV2(
             GetPolicyRequest.builder().profilingGroupName(profilingGroupName).build(),
             profilerClient::getPolicy
         );
+    }
+
+    private String getExistingComputePlatform(AmazonWebServicesClientProxy proxy, String profilingGroupName) {
+        return proxy.injectCredentialsAndInvokeV2(
+            DescribeProfilingGroupRequest.builder().profilingGroupName(profilingGroupName).build(),
+            profilerClient::describeProfilingGroup
+        ).profilingGroup().computePlatformAsString();
     }
 
     private void putAgentPermissions(AmazonWebServicesClientProxy proxy,

@@ -64,7 +64,8 @@
     "/properties/Arn"
   ],
   "createOnlyProperties": [
-    "/properties/ProfilingGroupName"
+    "/properties/ProfilingGroupName",
+    "/properties/ComputePlatform"
   ],
   "handlers": {
     "create": {

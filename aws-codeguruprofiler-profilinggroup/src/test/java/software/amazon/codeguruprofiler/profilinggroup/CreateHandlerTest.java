@@ -82,13 +82,6 @@ public class CreateHandlerTest {
             .actionGroup(AGENT_PERMISSIONS)
             .principals(principals)
             .build();
-    private final AddNotificationChannelsRequest addNotificationChannelsRequest = AddNotificationChannelsRequest.builder()
-            .profilingGroupName(profilingGroupName)
-            .channels(Channel.builder()
-                    .uri("channelUri")
-                    .eventPublishers(ImmutableSet.of(EventPublisher.ANOMALY_DETECTION))
-                    .build())
-            .build();
 
     private final DeleteProfilingGroupRequest deleteProfilingGroupRequest = DeleteProfilingGroupRequest.builder()
             .profilingGroupName(profilingGroupName)
@@ -96,28 +89,41 @@ public class CreateHandlerTest {
 
     @Nested
     class WhenAnomalyDetectionNotificationConfigurationIsSet {
+        private final AddNotificationChannelsRequest addNotificationChannelsRequest = AddNotificationChannelsRequest.builder()
+                .profilingGroupName(profilingGroupName)
+                .channels(Channel.builder()
+                        .uri("channelUri")
+                        .eventPublishers(ImmutableSet.of(EventPublisher.ANOMALY_DETECTION))
+                        .build())
+                .build();
+
         @BeforeEach
         public void setup() {
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName)
-                    .anomalyDetectionNotificationConfiguration(AnomalyDetectionNotificationConfiguration.builder()
-                            .channels(Collections.singletonList(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
-                                    .channelUri("channelUri")
-                                    .build()
-                            ))
-                            .build())
+                    .anomalyDetectionNotificationConfiguration(Collections.singletonList(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                            .channelUri("channelUri")
+                            .build()))
                     .build());
 
             doReturn(CreateProfilingGroupResponse.builder()
-                    .profilingGroup(ProfilingGroupDescription.builder().name(profilingGroupName).build())
-                    .build())
+                        .profilingGroup(ProfilingGroupDescription.builder().name(profilingGroupName).build())
+                        .build())
                     .when(proxy).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
         }
 
         @Test
-        public void itShouldDeleteProfilingGroupWhenAddNotificationChannelFails() {
+        public void itCreatesNotificationChannelSuccess() {
+            subject.handleRequest(proxy, request, null, logger);
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(addNotificationChannelsRequest), any());
+            verifyNoMoreInteractions(proxy);
+        }
+
+        @Test
+        public void itDeletesProfilingGroupWhenAddNotificationChannelFails() {
             when(proxy.injectCredentialsAndInvokeV2(eq(addNotificationChannelsRequest), any())).thenThrow(InternalServerException.class);
             assertThrows(CfnServiceInternalErrorException.class,
-                                () -> subject.handleRequest(proxy, request, null, logger));
+                    () -> subject.handleRequest(proxy, request, null, logger));
 
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(addNotificationChannelsRequest), any());
@@ -126,7 +132,7 @@ public class CreateHandlerTest {
         }
 
         @Test
-        public void optionalChannelIdNotSetSuccess() {
+        public void itCreatesNotificationChannelWithOptionalChannelIdNotSetSuccess() {
             doReturn(AddNotificationChannelsResponse.builder().build())
                     .when(proxy).injectCredentialsAndInvokeV2(eq(addNotificationChannelsRequest), any());
 
@@ -135,15 +141,13 @@ public class CreateHandlerTest {
         }
 
         @Test
-        public void optionalChannelIdSetSuccess() {
+        public void itCreatesNotificationChannelWithOptionalChannelIdSetSuccess() {
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName)
-                    .anomalyDetectionNotificationConfiguration(AnomalyDetectionNotificationConfiguration.builder()
-                            .channels(Collections.singletonList(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
-                                    .channelUri("channelUri")
-                                    .id("channelId")
-                                    .build()
-                            ))
-                            .build())
+                    .anomalyDetectionNotificationConfiguration(Collections.singletonList(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                            .channelUri("channelUri")
+                            .channelId("channelId")
+                            .build()
+                    ))
                     .build());
 
             final ProgressEvent<ResourceModel, CallbackContext> response = subject.handleRequest(proxy, request, null, logger);
@@ -182,7 +186,7 @@ public class CreateHandlerTest {
         @BeforeEach
         public void setup() {
             doReturn(CreateProfilingGroupResponse.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
+                .when(proxy).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
         }
 
         @Nested
@@ -203,7 +207,7 @@ public class CreateHandlerTest {
             }
 
             @AfterEach
-            public void itOnlyCallsCreatePGAndAddNotificationChannel() {
+            public void itOnlyCallsCreatePG() {
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
                 verifyNoMoreInteractions(proxy);
             }
@@ -236,10 +240,10 @@ public class CreateHandlerTest {
                 @Test
                 public void itThrowsExceptionWithNoSuppressedExceptionFromUnderlyingDeletePGAction() {
                     doThrow(ConflictException.builder().build())
-                            .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionsRequest), any());
+                        .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionsRequest), any());
 
                     CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class,
-                            () -> subject.handleRequest(proxy, request, null, logger));
+                        () -> subject.handleRequest(proxy, request, null, logger));
 
                     assertThat(exception).hasCauseExactlyInstanceOf(ConflictException.class);
                     assertThat(exception).hasNoSuppressedExceptions();
@@ -251,19 +255,18 @@ public class CreateHandlerTest {
                     public void itThrowsExceptionWithSuppressedExceptionFromUnderlyingDeletePGAction() {
                         Throwable deleteException = InternalServerException.builder().build();
                         doThrow(ConflictException.builder().build())
-                                .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionsRequest), any());
+                            .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionsRequest), any());
                         doThrow(deleteException)
-                                .when(proxy).injectCredentialsAndInvokeV2(eq(deleteProfilingGroupRequest), any());
+                            .when(proxy).injectCredentialsAndInvokeV2(eq(deleteProfilingGroupRequest), any());
 
                         CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class,
-                                () -> subject.handleRequest(proxy, request, null, logger));
+                            () -> subject.handleRequest(proxy, request, null, logger));
 
                         assertThat(exception).hasCauseExactlyInstanceOf(ConflictException.class);
                         assertThat(exception.getCause()).hasSuppressedException(deleteException);
                     }
                 }
             }
-
         }
     }
 
@@ -273,13 +276,13 @@ public class CreateHandlerTest {
         @ValueSource(strings = {"Default", "AWSLambda"})
         public void itSucceedsWithValidComputePlatformString(String computePlatform) {
             CreateProfilingGroupRequest createProfilingGroupRequest = CreateProfilingGroupRequest.builder()
-                    .profilingGroupName(profilingGroupName)
-                    .computePlatform(computePlatform)
-                    .clientToken(clientToken)
-                    .build();
+                .profilingGroupName(profilingGroupName)
+                .computePlatform(computePlatform)
+                .clientToken(clientToken)
+                .build();
 
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName)
-                    .computePlatform(computePlatform).build());
+                .computePlatform(computePlatform).build());
 
             assertSuccessfulResponse(subject.handleRequest(proxy, request, null, logger), computePlatform);
 
@@ -301,37 +304,37 @@ public class CreateHandlerTest {
             doThrow(ConflictException.builder().build()).when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
             CfnAlreadyExistsException exception = assertThrows(CfnAlreadyExistsException.class,
-                    () -> subject.handleRequest(proxy, request, null, logger));
+                () -> subject.handleRequest(proxy, request, null, logger));
             assertThat(exception).hasCauseExactlyInstanceOf(ConflictException.class);
         }
 
         @Test
         public void itThrowsServiceQuotaExceededException() {
             doThrow(ServiceQuotaExceededException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
             CfnServiceLimitExceededException exception = assertThrows(CfnServiceLimitExceededException.class,
-                    () -> subject.handleRequest(proxy, request, null, logger));
+                () -> subject.handleRequest(proxy, request, null, logger));
             assertThat(exception).hasCauseExactlyInstanceOf(ServiceQuotaExceededException.class);
         }
 
         @Test
         public void itThrowsInternalServerException() {
             doThrow(InternalServerException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
             CfnServiceInternalErrorException exception = assertThrows(CfnServiceInternalErrorException.class,
-                    () -> subject.handleRequest(proxy, request, null, logger));
+                () -> subject.handleRequest(proxy, request, null, logger));
             assertThat(exception).hasCauseExactlyInstanceOf(InternalServerException.class);
         }
 
         @Test
         public void itThrowsThrottlingException() {
             doThrow(ThrottlingException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
             CfnThrottlingException exception = assertThrows(CfnThrottlingException.class,
-                    () -> subject.handleRequest(proxy, request, null, logger));
+                () -> subject.handleRequest(proxy, request, null, logger));
             assertThat(exception).hasCauseExactlyInstanceOf(ThrottlingException.class);
         }
 
@@ -340,7 +343,7 @@ public class CreateHandlerTest {
             doThrow(ValidationException.builder().build()).when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
             CfnInvalidRequestException exception = assertThrows(CfnInvalidRequestException.class,
-                    () -> subject.handleRequest(proxy, request, null, logger));
+                () -> subject.handleRequest(proxy, request, null, logger));
             assertThat(exception).hasCauseExactlyInstanceOf(ValidationException.class);
         }
 
@@ -349,7 +352,7 @@ public class CreateHandlerTest {
             doThrow(CodeGuruProfilerException.builder().build()).when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
             CodeGuruProfilerException exception = assertThrows(CodeGuruProfilerException.class,
-                    () -> subject.handleRequest(proxy, request, null, logger));
+                () -> subject.handleRequest(proxy, request, null, logger));
             assertThat(exception).hasNoCause();
         }
     }

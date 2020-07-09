@@ -95,12 +95,9 @@ public class UpdateHandlerTest {
         @BeforeEach
         public void setup() {
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).anomalyDetectionNotificationConfiguration(
-                    AnomalyDetectionNotificationConfiguration.builder()
-                            .channels(Collections.singletonList(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
-                                    .channelUri("channelUri")
-                                    .eventPublishers(EventPublisher.ANOMALY_DETECTION.toString())
-                                    .build()))
-                            .build())
+                    Collections.singletonList(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                            .channelUri("channelUri")
+                            .build()))
                     .build());
 
             doReturn(GetPolicyResponse.builder().build())
@@ -136,9 +133,6 @@ public class UpdateHandlerTest {
 
         @Test
         public void itOnlyCallsAddNotificationChannelWhenUpdatedModelHasAdditionalChannelsNoIdSet() {
-            // Existing Set < Channel1{channelId1, channelUri1} >
-            // New Set < Channel1{channelId1, channelUri1}, Channel2{channelId2, channelUri2} >
-            // This should call addNotificationChannel and getExistingNotificationConfiguration, and nothing else
             doReturn(GetNotificationConfigurationResponse.builder()
                     .notificationConfiguration(NotificationConfiguration.builder()
                             .channels(Channel.builder()
@@ -152,18 +146,13 @@ public class UpdateHandlerTest {
 
             // the new model should have the additional channel
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).anomalyDetectionNotificationConfiguration(
-                    AnomalyDetectionNotificationConfiguration.builder()
-                            .channels(ImmutableList.of(
-                                    software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
-                                            .channelUri("channelUri")
-                                            .eventPublishers(EventPublisher.ANOMALY_DETECTION.toString())
-                                            .build(),
-                                    software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
-                                            .eventPublishers(EventPublisher.ANOMALY_DETECTION.toString())
-                                            .channelUri("channelUri2")
-                                            .build()
-                            ))
-                            .build())
+                    ImmutableList.of(
+                            software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                                    .channelUri("channelUri")
+                                    .build(),
+                            software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                                    .channelUri("channelUri2")
+                                    .build()))
                     .build());
 
             subject.handleRequest(proxy, request, null, logger);
@@ -192,14 +181,9 @@ public class UpdateHandlerTest {
                     .when(proxy).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
 
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).anomalyDetectionNotificationConfiguration(
-                    AnomalyDetectionNotificationConfiguration.builder()
-                            .channels(ImmutableList.of(
-                                    software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
-                                            .channelUri("channelUri2")
-                                            .eventPublishers(EventPublisher.ANOMALY_DETECTION.toString())
-                                            .build()
-                            ))
-                            .build())
+                    ImmutableList.of(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                            .channelUri("channelUri2")
+                            .build()))
                     .build());
 
             subject.handleRequest(proxy, request, null, logger);
@@ -207,6 +191,46 @@ public class UpdateHandlerTest {
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeNotificationChannelRequest), any());
+            verifyNoMoreInteractions(proxy);
+
+        }
+
+        @Test
+        public void itUpdatesChannelWithSameUriButDifferentId() {
+            doReturn(GetNotificationConfigurationResponse.builder()
+                    .notificationConfiguration(NotificationConfiguration.builder()
+                            .channels(Channel.builder()
+                                            .id("channelId")
+                                            .uri("channelUri")
+                                            .eventPublishers(EventPublisher.ANOMALY_DETECTION)
+                                            .build(),
+                                    Channel.builder()
+                                            .id("channelId2")
+                                            .uri("channelUri2")
+                                            .build())
+                            .build())
+                    .build())
+                    .when(proxy).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
+
+            request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).anomalyDetectionNotificationConfiguration(
+                    ImmutableList.of(
+                            software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                                    .channelId("channelIdNew")
+                                    .channelUri("channelUri")
+                                    .build(),
+                            software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                                    .channelUri("channelUri2")
+                                    .build()))
+                    .build());
+
+            subject.handleRequest(proxy, request, null, logger);
+
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeNotificationChannelRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(AddNotificationChannelsRequest.builder().profilingGroupName(profilingGroupName).channels(
+                    Channel.builder().id("channelIdNew").uri("channelUri").eventPublishers(EventPublisher.ANOMALY_DETECTION).build())
+                            .build()), any());
             verifyNoMoreInteractions(proxy);
 
         }
@@ -229,18 +253,13 @@ public class UpdateHandlerTest {
                     .when(proxy).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
 
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).anomalyDetectionNotificationConfiguration(
-                    AnomalyDetectionNotificationConfiguration.builder()
-                            .channels(ImmutableList.of(
-                                    software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
-                                            .channelUri("channelUri")
-                                            .eventPublishers(EventPublisher.ANOMALY_DETECTION.toString())
-                                            .build(),
-                                    software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
-                                            .channelUri("channelUri2")
-                                            .eventPublishers(EventPublisher.ANOMALY_DETECTION.toString())
-                                            .build()
-                                    ))
-                            .build())
+                    ImmutableList.of(
+                            software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                                    .channelUri("channelUri")
+                                    .build(),
+                            software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                                    .channelUri("channelUri2")
+                                    .build()))
                     .build());
 
             subject.handleRequest(proxy, request, null, logger);

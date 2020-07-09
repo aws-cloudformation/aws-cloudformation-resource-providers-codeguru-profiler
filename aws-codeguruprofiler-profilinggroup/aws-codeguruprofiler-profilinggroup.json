@@ -12,31 +12,27 @@
       "pattern": "^arn:aws(-(cn|gov))?:iam::([0-9]{12}):[^.]+$"
     },
     "ChannelId": {
-      "type": "string"
+      "description": "Unique identifier for each Channel in the notification configuration of a Profiling Group",
+      "type": "string",
+      "pattern": "[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"
     },
     "ChannelUri": {
-      "description": "The Amazon Resource Name (ARN) of the specified SNS Topic.",
+      "description": "Unique arn of the resource to be used for notifications. We support a valid SNS topic arn as a channel uri.",
       "type": "string",
       "pattern": "^arn:aws(-(cn|gov))?:[a-z-]+:(([a-z]+-)+[0-9]+):([0-9]{12}):[^.]+$"
     },
     "Channel": {
+      "description": "Notification medium for users to get alerted for events that occur in application profile. We support SNS topic as a notification channel.",
       "type": "object",
       "required": [
-        "channelUri",
-        "eventPublishers"
+        "channelUri"
       ],
       "properties": {
-        "id": {
+        "channelId": {
           "$ref": "#/definitions/ChannelId"
         },
         "channelUri": {
           "$ref": "#/definitions/ChannelUri"
-        },
-        "eventPublishers": {
-          "type": "string",
-          "enum": [
-            "AnomalyDetection"
-          ]
         }
       }
     }
@@ -75,17 +71,10 @@
       }
     },
     "AnomalyDetectionNotificationConfiguration": {
-      "description": "Notification medium for users to get alerted for events that occur in application profile. We support SNS topic as a notification channel.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "Channels": {
-          "description": "Channels",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Channel"
-          }
-        }
+      "description": "Configuration for Notification Channels for Anomaly Detection feature in CodeGuru Profiler",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Channel"
       }
     },
     "Arn": {
@@ -136,7 +125,6 @@
     },
     "delete": {
       "permissions": [
-        "sns:Publish",
         "codeguru-profiler:GetNotificationConfiguration",
         "codeguru-profiler:RemoveNotificationChannel",
         "codeguru-profiler:DeleteProfilingGroup"

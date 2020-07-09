@@ -65,20 +65,7 @@ public class DeleteHandlerTest {
     public void testSuccessState() {
         doReturn(DeleteProfilingGroupResponse.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(
-                ArgumentMatchers.eq(DeleteProfilingGroupRequest
-                        .builder()
-                        .profilingGroupName("IronMan-Suit-34")
-                        .build()), any());
-
-        doReturn(GetNotificationConfigurationResponse.builder()
-                .notificationConfiguration(NotificationConfiguration.builder()
-                        .channels(Channel.builder().uri("arn:aws:sns:us-east-1:177364881114:SampleTopic")
-                                .eventPublishers(ImmutableSet.of(EventPublisher.ANOMALY_DETECTION))
-                                .build())
-                        .build())
-                .build())
-                .when(proxy).injectCredentialsAndInvokeV2(
-                ArgumentMatchers.eq(GetNotificationConfigurationRequest
+                    ArgumentMatchers.eq(DeleteProfilingGroupRequest
                         .builder()
                         .profilingGroupName("IronMan-Suit-34")
                         .build()), any());

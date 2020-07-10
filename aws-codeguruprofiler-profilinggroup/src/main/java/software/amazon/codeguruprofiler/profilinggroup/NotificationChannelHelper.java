@@ -3,14 +3,13 @@ package software.amazon.codeguruprofiler.profilinggroup;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
 import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
 import software.amazon.awssdk.services.codeguruprofiler.model.AddNotificationChannelsRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.Channel;
 import software.amazon.awssdk.services.codeguruprofiler.model.EventPublisher;
-import software.amazon.awssdk.services.codeguruprofiler.model.GetNotificationConfigurationRequest;
-import software.amazon.awssdk.services.codeguruprofiler.model.GetNotificationConfigurationResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.RemoveNotificationChannelRequest;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 
@@ -23,12 +22,9 @@ public class NotificationChannelHelper {
                                                AmazonWebServicesClientProxy proxy, CodeGuruProfilerClient profilerClient) {
         AddNotificationChannelsRequest.Builder addNotificationChannelsRequest = AddNotificationChannelsRequest.builder()
                 .profilingGroupName(pgName);
-        channels.forEach(channel -> addNotificationChannelsRequest.channels(Channel.builder()
-                .uri(channel.getChannelUri())
+        addNotificationChannelsRequest.channels(channels.stream().map(channel -> Channel.builder().uri(channel.getChannelUri())
                 .eventPublishers(ImmutableSet.of(EventPublisher.ANOMALY_DETECTION))
-                .id(channel.getChannelId())
-                .build()
-        ));
+                .id(channel.getChannelId()).build()).collect(Collectors.toList()));
 
         proxy.injectCredentialsAndInvokeV2(addNotificationChannelsRequest.build(), profilerClient::addNotificationChannels);
     }
@@ -48,23 +44,9 @@ public class NotificationChannelHelper {
         proxy.injectCredentialsAndInvokeV2(removeNotificationChannelRequest, profilerClient::removeNotificationChannel);
     }
 
-    public static void deleteNotificationChannelsForProfilingGroup(final String pgName, final AmazonWebServicesClientProxy proxy, CodeGuruProfilerClient profilerClient) {
-        GetNotificationConfigurationRequest getNotificationConfigurationRequest = GetNotificationConfigurationRequest.builder()
-                .profilingGroupName(pgName)
-                .build();
-
-        GetNotificationConfigurationResponse getNotificationConfigurationResponse = proxy.injectCredentialsAndInvokeV2(getNotificationConfigurationRequest,
-                profilerClient::getNotificationConfiguration);
-
-        // Iterate through all channels and remove them
-        getNotificationConfigurationResponse.notificationConfiguration().channels().forEach(channel -> {
-            deleteNotificationChannel(pgName, channel.id(), proxy, profilerClient);
-        });
-    }
-
     // Since we don't have a PUT operation, this emulates a channel update, when the updated channel contains a new Id
-    public static void updateChannel(final String pgName, final String channelId, final Channel requestedChannel, final AmazonWebServicesClientProxy proxy,
-                                     CodeGuruProfilerClient profilerClient) {
+    public static void updateChannelId(final String pgName, final String channelId, final Channel requestedChannel, final AmazonWebServicesClientProxy proxy,
+                                       CodeGuruProfilerClient profilerClient) {
         deleteNotificationChannel(pgName, channelId, proxy, profilerClient);
         addChannelNotification(pgName, requestedChannel, proxy, profilerClient);
     }

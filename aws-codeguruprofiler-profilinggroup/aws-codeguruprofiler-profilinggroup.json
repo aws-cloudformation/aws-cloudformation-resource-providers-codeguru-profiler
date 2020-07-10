@@ -116,6 +116,7 @@
     "update": {
       "permissions": [
         "sns:Publish",
+        "codeguru-profiler:GetNotificationConfiguration",
         "codeguru-profiler:AddNotificationChannels",
         "codeguru-profiler:RemoveNotificationChannel",
         "codeguru-profiler:PutPermission",

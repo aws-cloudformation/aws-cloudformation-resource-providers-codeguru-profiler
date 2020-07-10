@@ -1,13 +1,10 @@
 package software.amazon.codeguruprofiler.profilinggroup;
 
-import java.util.Collections;
-
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 public class RequestBuilder {
     static ResourceHandlerRequest<ResourceModel> makeValidRequest() {
-        return makeRequest(ResourceModel.builder().anomalyDetectionNotificationConfiguration(Collections.singletonList(
-                Channel.builder().channelUri("arn:aws:sns:us-east-1:111111111111:SampleTopic").build())).profilingGroupName("IronMan" +
+        return makeRequest(ResourceModel.builder().profilingGroupName("IronMan" +
                 "-Suit-34").build());
     }
 

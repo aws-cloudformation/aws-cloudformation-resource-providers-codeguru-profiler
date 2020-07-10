@@ -132,7 +132,7 @@ public class CreateHandlerTest {
         }
 
         @Test
-        public void itCreatesNotificationChannelWithOptionalChannelIdNotSetSuccess() {
+        public void itSucceedsWhenChannelIdIsMissing() {
             doReturn(AddNotificationChannelsResponse.builder().build())
                     .when(proxy).injectCredentialsAndInvokeV2(eq(addNotificationChannelsRequest), any());
 
@@ -141,7 +141,7 @@ public class CreateHandlerTest {
         }
 
         @Test
-        public void itCreatesNotificationChannelWithOptionalChannelIdSetSuccess() {
+        public void itSucceedsWhenChannelIdExists() {
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName)
                     .anomalyDetectionNotificationConfiguration(Collections.singletonList(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
                             .channelUri("channelUri")
@@ -359,9 +359,9 @@ public class CreateHandlerTest {
 
     private ResourceModel newResourceModel(final AgentPermissions permissions) {
         return ResourceModel.builder()
-                .profilingGroupName(profilingGroupName)
-                .agentPermissions(permissions)
-                .build();
+                    .profilingGroupName(profilingGroupName)
+                    .agentPermissions(permissions)
+                    .build();
     }
 
     private void assertSuccessfulResponse(ProgressEvent<ResourceModel, CallbackContext> response) {

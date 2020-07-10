@@ -1,7 +1,5 @@
 package software.amazon.codeguruprofiler.profilinggroup;
 
-import static software.amazon.codeguruprofiler.profilinggroup.NotificationChannelHelper.deleteNotificationChannelsForProfilingGroup;
-
 import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
 import software.amazon.awssdk.services.codeguruprofiler.model.DeleteProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;

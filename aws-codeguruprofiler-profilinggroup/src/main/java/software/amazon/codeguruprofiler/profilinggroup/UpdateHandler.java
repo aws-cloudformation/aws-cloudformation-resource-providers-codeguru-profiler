@@ -5,6 +5,7 @@ import static software.amazon.codeguruprofiler.profilinggroup.NotificationChanne
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
@@ -56,17 +57,16 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 putAgentPermissions(proxy, profilingGroupName, principals.get(), getPolicyResponse.revisionId());
                 logger.log(
                     String.format("Policy for [%s] for accountId [%s] has been successfully updated! actionGroup: %s, principals: %s",
-                            profilingGroupName,
-                            awsAccountId,
-                            ActionGroup.AGENT_PERMISSIONS,
-                            principals.get())
+                        profilingGroupName,
+                        awsAccountId,
+                        ActionGroup.AGENT_PERMISSIONS,
+                        principals.get())
                 );
             } else if (getPolicyResponse.policy() != null) {
                 removeAgentPermission(proxy, profilingGroupName, getPolicyResponse.revisionId());
                 logger.log(String.format("Policy for [%s] for accountId [%s] has been successfully removed!", profilingGroupName, awsAccountId));
             }
 
-            // Current channels means the channels from the model
             Optional<List<software.amazon.codeguruprofiler.profilinggroup.Channel>> anomalyDetectionNotificationConfiguration = anomalyDetectionNotificationConfiguration(model);
             if (anomalyDetectionNotificationConfiguration.isPresent()) {
                 updateNotificationChannels(profilingGroupName, proxy,
@@ -121,7 +121,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
     // Generate the change-set and add / delete notification channel based on change-set
     private void updateNotificationChannels(List<Channel> currentChannels, List<Channel> requestedConfiguration, String pgName, AmazonWebServicesClientProxy proxy) {
         Map<String, Channel> currentChannelsMap = currentChannels.stream().collect(Collectors.toMap(Channel::uri, val -> val));
-        Map<String, Channel> requestedConfigurationMap = requestedConfiguration.stream().collect(Collectors.toMap(Channel::uri, val -> val));
+        Map<String, Channel> requestedConfigurationMap = requestedConfiguration.stream().collect(Collectors.toMap(Channel::uri, Function.identity()));
 
         for (Channel currentChannel : currentChannels) {
             if (!requestedConfigurationMap.containsKey(currentChannel.uri())) {
@@ -131,7 +131,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 // check if there is an updated id, and if so then re-add the channel with the new id, else use the existing channel
                 Channel requestedChannel = requestedConfigurationMap.get(currentChannel.uri());
                 if (requestedChannel.id() != null && !currentChannel.id().equals(requestedChannel.id())) {
-                    NotificationChannelHelper.updateChannel(pgName, currentChannel.id(), requestedChannel, proxy, profilerClient);
+                    NotificationChannelHelper.updateChannelId(pgName, currentChannel.id(), requestedChannel, proxy, profilerClient);
                     // Remove to avoid unnecessary iterations below
                     requestedConfiguration.remove(requestedChannel);
                 }
@@ -150,11 +150,11 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                                      List<String> principals,
                                      String revisionId) {
         PutPermissionRequest putPermissionRequest = PutPermissionRequest.builder()
-                .profilingGroupName(profilingGroupName)
-                .actionGroup(ActionGroup.AGENT_PERMISSIONS)
-                .principals(principals)
-                .revisionId(revisionId)
-                .build();
+                                                        .profilingGroupName(profilingGroupName)
+                                                        .actionGroup(ActionGroup.AGENT_PERMISSIONS)
+                                                        .principals(principals)
+                                                        .revisionId(revisionId)
+                                                        .build();
 
         proxy.injectCredentialsAndInvokeV2(putPermissionRequest, profilerClient::putPermission);
     }
@@ -163,10 +163,10 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                                        String profilingGroupName,
                                        String revisionId) {
         RemovePermissionRequest removePermissionRequest = RemovePermissionRequest.builder()
-                .profilingGroupName(profilingGroupName)
-                .actionGroup(ActionGroup.AGENT_PERMISSIONS)
-                .revisionId(revisionId)
-                .build();
+                                                            .profilingGroupName(profilingGroupName)
+                                                            .actionGroup(ActionGroup.AGENT_PERMISSIONS)
+                                                            .revisionId(revisionId)
+                                                            .build();
 
         proxy.injectCredentialsAndInvokeV2(removePermissionRequest, profilerClient::removePermission);
     }

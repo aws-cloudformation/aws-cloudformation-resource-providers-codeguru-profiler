@@ -71,27 +71,28 @@ public class UpdateHandlerTest {
     private final GetPolicyRequest getPolicyRequest =
             GetPolicyRequest.builder().profilingGroupName(profilingGroupName).build();
 
-    private final GetNotificationConfigurationRequest getNotificationConfigurationRequest =
-            GetNotificationConfigurationRequest.builder().profilingGroupName(profilingGroupName).build();
-
-    private final RemoveNotificationChannelRequest removeNotificationChannelRequest =
-            RemoveNotificationChannelRequest.builder()
-                    .profilingGroupName(profilingGroupName)
-                    .channelId("channelId")
-                    .build();
-
-    private final AddNotificationChannelsRequest addNotificationChannelsRequest = AddNotificationChannelsRequest.builder()
-            .profilingGroupName(profilingGroupName)
-            .channels(Channel.builder()
-                    .uri("channelUri2")
-                    .eventPublishers(ImmutableSet.of(EventPublisher.ANOMALY_DETECTION))
-                    .build())
-            .build();
 
     private final List<String> principals = Arrays.asList("arn:aws:iam::123456789012:role/UnitTestRole");
 
     @Nested
     class WhenNotificationChannelConfigurationIsProvided {
+        private final GetNotificationConfigurationRequest getNotificationConfigurationRequest =
+                GetNotificationConfigurationRequest.builder().profilingGroupName(profilingGroupName).build();
+
+        private final RemoveNotificationChannelRequest removeChannel1Request =
+                RemoveNotificationChannelRequest.builder()
+                        .profilingGroupName(profilingGroupName)
+                        .channelId("channelId")
+                        .build();
+
+        private final AddNotificationChannelsRequest addChannel2Request = AddNotificationChannelsRequest.builder()
+                .profilingGroupName(profilingGroupName)
+                .channels(Channel.builder()
+                        .uri("channelUri2")
+                        .eventPublishers(ImmutableSet.of(EventPublisher.ANOMALY_DETECTION))
+                        .build())
+                .build();
+
         @BeforeEach
         public void setup() {
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).anomalyDetectionNotificationConfiguration(
@@ -105,11 +106,11 @@ public class UpdateHandlerTest {
 
 
             doReturn(RemoveNotificationChannelResponse.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(eq(removeNotificationChannelRequest), any());
+                    .when(proxy).injectCredentialsAndInvokeV2(eq(removeChannel1Request), any());
         }
 
         @Test
-        public void testSuccess() {
+        public void itSuccessfullyAddsNotificationChannel() {
             doReturn(GetNotificationConfigurationResponse.builder()
                     .notificationConfiguration(NotificationConfiguration.builder()
                             .channels(Channel.builder()
@@ -159,7 +160,7 @@ public class UpdateHandlerTest {
 
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
-            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(addNotificationChannelsRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(addChannel2Request), any());
             verifyNoMoreInteractions(proxy);
         }
 
@@ -190,7 +191,7 @@ public class UpdateHandlerTest {
 
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
-            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeNotificationChannelRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeChannel1Request), any());
             verifyNoMoreInteractions(proxy);
 
         }
@@ -227,7 +228,7 @@ public class UpdateHandlerTest {
 
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
-            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeNotificationChannelRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeChannel1Request), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(AddNotificationChannelsRequest.builder().profilingGroupName(profilingGroupName).channels(
                     Channel.builder().id("channelIdNew").uri("channelUri").eventPublishers(EventPublisher.ANOMALY_DETECTION).build())
                             .build()), any());

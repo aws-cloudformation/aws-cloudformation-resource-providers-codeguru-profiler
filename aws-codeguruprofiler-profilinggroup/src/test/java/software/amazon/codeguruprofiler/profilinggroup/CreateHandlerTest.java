@@ -125,17 +125,16 @@ public class CreateHandlerTest {
 
         @Test
         public void itCreatesNotificationChannelWithMultipleChannels() {
-            ImmutableList<software.amazon.codeguruprofiler.profilinggroup.Channel> of = ImmutableList.of(
+            ImmutableList<software.amazon.codeguruprofiler.profilinggroup.Channel> notificationConfiguration = ImmutableList.of(
                     software.amazon.codeguruprofiler.profilinggroup.Channel.builder().channelUri("channelUri").build(),
                     software.amazon.codeguruprofiler.profilinggroup.Channel.builder().channelUri("channelUri2").build());
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName)
-                .anomalyDetectionNotificationConfiguration(of
-            ).build());
+                .anomalyDetectionNotificationConfiguration(notificationConfiguration).build());
 
             subject.handleRequest(proxy, request, null, logger);
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
             AddNotificationChannelsRequest desiredRequest =
-                    AddNotificationChannelsRequest.builder().profilingGroupName(profilingGroupName).channels(of.stream().map(p -> Channel.builder().eventPublishers(EventPublisher.ANOMALY_DETECTION)
+                    AddNotificationChannelsRequest.builder().profilingGroupName(profilingGroupName).channels(notificationConfiguration.stream().map(p -> Channel.builder().eventPublishers(EventPublisher.ANOMALY_DETECTION)
                     .uri(p.getChannelUri()).build()).collect(Collectors.toList())).build();
 
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(desiredRequest), any());
@@ -156,7 +155,7 @@ public class CreateHandlerTest {
         }
 
         @Test
-        public void itCreatesNotificationChannelWithOptionalChannelIdNotSetSuccess() {
+        public void itSucceedsWhenChannelIdIsMissing() {
             doReturn(AddNotificationChannelsResponse.builder().build())
                     .when(proxy).injectCredentialsAndInvokeV2(eq(addNotificationChannelsRequest), any());
 
@@ -165,7 +164,7 @@ public class CreateHandlerTest {
         }
 
         @Test
-        public void itCreatesNotificationChannelWithOptionalChannelIdSetSuccess() {
+        public void itSucceedsWhenChannelIdExists() {
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName)
                     .anomalyDetectionNotificationConfiguration(Collections.singletonList(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
                             .channelUri("channelUri")

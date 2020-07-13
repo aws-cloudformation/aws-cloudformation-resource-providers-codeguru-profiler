@@ -29,19 +29,14 @@ public class NotificationChannelHelper {
     }
 
     private static void addConvertedChannelNotifications(String pgName, List<Channel> channels, AmazonWebServicesClientProxy proxy, CodeGuruProfilerClient profilerClient) {
-        AddNotificationChannelsRequest.Builder addNotificationChannelsRequest = AddNotificationChannelsRequest.builder()
-                .profilingGroupName(pgName);
+        AddNotificationChannelsRequest addNotificationChannelsRequest = AddNotificationChannelsRequest.builder()
+                .profilingGroupName(pgName).channels(channels).build();
 
-        addNotificationChannelsRequest.channels(channels);
-
-        proxy.injectCredentialsAndInvokeV2(addNotificationChannelsRequest.build(), profilerClient::addNotificationChannels);
+        proxy.injectCredentialsAndInvokeV2(addNotificationChannelsRequest, profilerClient::addNotificationChannels);
     }
 
     public static void addChannelNotification(String pgName, Channel channel, AmazonWebServicesClientProxy proxy, CodeGuruProfilerClient profilerClient) {
-        addChannelNotifications(pgName, Collections.singletonList(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
-                .channelId(channel.id())
-                .channelUri(channel.uri())
-                .build()), proxy, profilerClient);
+        addConvertedChannelNotifications(pgName, Collections.singletonList(channel), proxy, profilerClient);
     }
 
     public static void deleteNotificationChannel(final String pgName, final String channelId, final AmazonWebServicesClientProxy proxy, CodeGuruProfilerClient profilerClient) {

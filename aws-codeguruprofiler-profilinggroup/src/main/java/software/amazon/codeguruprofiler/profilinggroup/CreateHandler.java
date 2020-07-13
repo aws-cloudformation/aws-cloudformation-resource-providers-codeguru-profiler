@@ -107,7 +107,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
     }
 
     private void deleteProfilingGroup(AmazonWebServicesClientProxy proxy, Logger logger,
-                                      String pgName, String awsAccountId, CodeGuruProfilerException putPermissionException) {
+                                      String pgName, String awsAccountId, CodeGuruProfilerException exception) {
         DeleteProfilingGroupRequest deletePgRequest = DeleteProfilingGroupRequest.builder().profilingGroupName(pgName).build();
         try {
             proxy.injectCredentialsAndInvokeV2(deletePgRequest, profilerClient::deleteProfilingGroup);
@@ -116,8 +116,8 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         } catch (CodeGuruProfilerException deleteException) {
             logger.log(format("%s [%s] for accountId [%s] has failed when deleting the profiling group!",
                 ResourceModel.TYPE_NAME, pgName, awsAccountId));
-            putPermissionException.addSuppressed(deleteException);
-            throw putPermissionException;
+            exception.addSuppressed(deleteException);
+            throw exception;
         }
     }
 

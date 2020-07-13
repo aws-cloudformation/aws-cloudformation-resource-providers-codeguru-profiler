@@ -120,7 +120,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
 
     // Generate the change-set and add / delete notification channel based on change-set
     private void updateNotificationChannels(List<Channel> currentChannels, List<Channel> requestedConfiguration, String pgName, AmazonWebServicesClientProxy proxy) {
-        Map<String, Channel> currentChannelsMap = currentChannels.stream().collect(Collectors.toMap(Channel::uri, val -> val));
+        Map<String, Channel> currentChannelsMap = currentChannels.stream().collect(Collectors.toMap(Channel::uri, Function.identity()));
         Map<String, Channel> requestedConfigurationMap = requestedConfiguration.stream().collect(Collectors.toMap(Channel::uri, Function.identity()));
 
         for (Channel currentChannel : currentChannels) {
@@ -163,10 +163,10 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                                        String profilingGroupName,
                                        String revisionId) {
         RemovePermissionRequest removePermissionRequest = RemovePermissionRequest.builder()
-                                                            .profilingGroupName(profilingGroupName)
-                                                            .actionGroup(ActionGroup.AGENT_PERMISSIONS)
-                                                            .revisionId(revisionId)
-                                                            .build();
+                                                              .profilingGroupName(profilingGroupName)
+                                                              .actionGroup(ActionGroup.AGENT_PERMISSIONS)
+                                                              .revisionId(revisionId)
+                                                              .build();
 
         proxy.injectCredentialsAndInvokeV2(removePermissionRequest, profilerClient::removePermission);
     }

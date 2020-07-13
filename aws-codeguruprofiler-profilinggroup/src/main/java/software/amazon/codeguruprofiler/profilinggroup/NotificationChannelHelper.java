@@ -20,11 +20,19 @@ public class NotificationChannelHelper {
 
     public static void addChannelNotifications(String pgName, List<software.amazon.codeguruprofiler.profilinggroup.Channel> channels,
                                                AmazonWebServicesClientProxy proxy, CodeGuruProfilerClient profilerClient) {
+        addConvertedChannelNotifications(pgName, channels.stream().map(pgChannel -> Channel.builder()
+                .uri(pgChannel.getChannelUri())
+                .eventPublishers(ImmutableSet.of(EventPublisher.ANOMALY_DETECTION))
+                .id(pgChannel.getChannelId())
+                .build()
+        ).collect(Collectors.toList()), proxy, profilerClient);
+    }
+
+    private static void addConvertedChannelNotifications(String pgName, List<Channel> channels, AmazonWebServicesClientProxy proxy, CodeGuruProfilerClient profilerClient) {
         AddNotificationChannelsRequest.Builder addNotificationChannelsRequest = AddNotificationChannelsRequest.builder()
                 .profilingGroupName(pgName);
-        addNotificationChannelsRequest.channels(channels.stream().map(channel -> Channel.builder().uri(channel.getChannelUri())
-                .eventPublishers(ImmutableSet.of(EventPublisher.ANOMALY_DETECTION))
-                .id(channel.getChannelId()).build()).collect(Collectors.toList()));
+
+        addNotificationChannelsRequest.channels(channels);
 
         proxy.injectCredentialsAndInvokeV2(addNotificationChannelsRequest.build(), profilerClient::addNotificationChannels);
     }
@@ -46,7 +54,7 @@ public class NotificationChannelHelper {
 
     // Since we don't have a PUT operation, this emulates a channel update, when the updated channel contains a new Id
     public static void updateChannelId(final String pgName, final String channelId, final Channel requestedChannel, final AmazonWebServicesClientProxy proxy,
-                                       CodeGuruProfilerClient profilerClient) {
+                                     CodeGuruProfilerClient profilerClient) {
         deleteNotificationChannel(pgName, channelId, proxy, profilerClient);
         addChannelNotification(pgName, requestedChannel, proxy, profilerClient);
     }

@@ -71,7 +71,7 @@
       }
     },
     "AnomalyDetectionNotificationConfiguration": {
-      "description": "Configuration for Notification Channels for Anomaly Detection feature in CodeGuru Profiler",
+      "description": "Configuration for Notification Channels for Anomaly Detection feature in CodeGuru Profiler which enables customers to detect anomalies in the application profile for those methods that represent the highest proportion of CPU time or latency",
       "type": "array",
       "items": {
         "$ref": "#/definitions/Channel"
@@ -116,8 +116,8 @@
     "update": {
       "permissions": [
         "sns:Publish",
-        "codeguru-profiler:GetNotificationConfiguration",
         "codeguru-profiler:AddNotificationChannels",
+        "codeguru-profiler:GetNotificationConfiguration",
         "codeguru-profiler:RemoveNotificationChannel",
         "codeguru-profiler:PutPermission",
         "codeguru-profiler:RemovePermission",
@@ -126,8 +126,6 @@
     },
     "delete": {
       "permissions": [
-        "codeguru-profiler:GetNotificationConfiguration",
-        "codeguru-profiler:RemoveNotificationChannel",
         "codeguru-profiler:DeleteProfilingGroup"
       ]
     },

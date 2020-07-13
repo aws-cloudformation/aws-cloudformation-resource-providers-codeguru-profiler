@@ -1,14 +1,5 @@
 package software.amazon.codeguruprofiler.profilinggroup;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeInvalidRequest;
-import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeValidRequest;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +21,15 @@ import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeInvalidRequest;
+import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.makeValidRequest;
 
 @ExtendWith(MockitoExtension.class)
 public class DeleteHandlerTest {

@@ -5,49 +5,27 @@
     "MyProfilingGroup": {
       "Type": "AWS::CodeGuruProfiler::ProfilingGroup",
       "Properties": {
-        "ProfilingGroupName": "MySampleProfilingGroup10",
-        "ComputePlatform": "Default",
-        "AnomalyDetectionNotificationConfiguration": [
-          {
-            "channelUri": "arn:aws:sns:us-east-1:977364881114:MyTopic"
-          }
-        ]
+        "ProfilingGroupName": "MySampleProfilingGroup"
       }
     },
     "MyProfilingGroupWithDefaultComputePlatform": {
       "Type": "AWS::CodeGuruProfiler::ProfilingGroup",
       "Properties": {
-        "ProfilingGroupName": "MyProfilingGroupWithDefaultComputePlatform10",
-        "ComputePlatform": "Default",
-        "AnomalyDetectionNotificationConfiguration": [
-          {
-            "channelUri": "arn:aws:sns:us-east-1:977364881114:MyTopic"
-          }
-        ]
+        "ProfilingGroupName": "MyProfilingGroupWithDefaultComputePlatform",
+        "ComputePlatform": "Default"
       }
     },
     "MyProfilingGroupWithLambdaComputePlatform": {
       "Type": "AWS::CodeGuruProfiler::ProfilingGroup",
       "Properties": {
-        "ProfilingGroupName": "MyProfilingGroupWithLambdaComputePlatform10",
-        "ComputePlatform": "AWSLambda",
-        "AnomalyDetectionNotificationConfiguration": [
-          {
-            "channelUri": "arn:aws:sns:us-east-1:977364881114:MyTopic"
-          }
-        ]
+        "ProfilingGroupName": "MyProfilingGroupWithLambdaComputePlatform",
+        "ComputePlatform": "AWSLambda"
       }
     },
     "MyProfilingGroupWithAgentPermissions": {
       "Type": "AWS::CodeGuruProfiler::ProfilingGroup",
       "Properties": {
-        "ProfilingGroupName": "MySampleProfilingGroupWithAgentPermissions10",
-        "ComputePlatform": "Default",
-        "AnomalyDetectionNotificationConfiguration": [
-          {
-            "channelUri": "arn:aws:sns:us-east-1:977364881114:MyTopic"
-          }
-        ],
+        "ProfilingGroupName": "MySampleProfilingGroupWithAgentPermissions",
         "AgentPermissions": {
           "Principals": [
             {

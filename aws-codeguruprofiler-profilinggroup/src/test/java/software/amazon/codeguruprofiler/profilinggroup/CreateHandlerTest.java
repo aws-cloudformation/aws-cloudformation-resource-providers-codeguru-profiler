@@ -1,5 +1,6 @@
 package software.amazon.codeguruprofiler.profilinggroup;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +11,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import software.amazon.awssdk.services.codeguruprofiler.model.AddNotificationChannelsRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.AddNotificationChannelsResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.Channel;
@@ -39,6 +42,7 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -106,8 +110,8 @@ public class CreateHandlerTest {
                     .build());
 
             doReturn(CreateProfilingGroupResponse.builder()
-                        .profilingGroup(ProfilingGroupDescription.builder().name(profilingGroupName).build())
-                        .build())
+                         .profilingGroup(ProfilingGroupDescription.builder().name(profilingGroupName).build())
+                         .build())
                     .when(proxy).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
         }
 
@@ -120,6 +124,26 @@ public class CreateHandlerTest {
         }
 
         @Test
+        public void itCreatesNotificationChannelWithMultipleChannels() {
+            ImmutableList<software.amazon.codeguruprofiler.profilinggroup.Channel> of = ImmutableList.of(
+                    software.amazon.codeguruprofiler.profilinggroup.Channel.builder().channelUri("channelUri").build(),
+                    software.amazon.codeguruprofiler.profilinggroup.Channel.builder().channelUri("channelUri2").build());
+            request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName)
+                .anomalyDetectionNotificationConfiguration(of
+            ).build());
+
+            subject.handleRequest(proxy, request, null, logger);
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(createPgRequest), any());
+            AddNotificationChannelsRequest desiredRequest =
+                    AddNotificationChannelsRequest.builder().profilingGroupName(profilingGroupName).channels(of.stream().map(p -> Channel.builder().eventPublishers(EventPublisher.ANOMALY_DETECTION)
+                    .uri(p.getChannelUri()).build()).collect(Collectors.toList())).build();
+
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(desiredRequest), any());
+            verifyNoMoreInteractions(proxy);
+        }
+
+        @Test
+        @MockitoSettings(strictness = Strictness.LENIENT)
         public void itDeletesProfilingGroupWhenAddNotificationChannelFails() {
             when(proxy.injectCredentialsAndInvokeV2(eq(addNotificationChannelsRequest), any())).thenThrow(InternalServerException.class);
             assertThrows(CfnServiceInternalErrorException.class,
@@ -132,7 +156,7 @@ public class CreateHandlerTest {
         }
 
         @Test
-        public void itSucceedsWhenChannelIdIsMissing() {
+        public void itCreatesNotificationChannelWithOptionalChannelIdNotSetSuccess() {
             doReturn(AddNotificationChannelsResponse.builder().build())
                     .when(proxy).injectCredentialsAndInvokeV2(eq(addNotificationChannelsRequest), any());
 
@@ -141,7 +165,7 @@ public class CreateHandlerTest {
         }
 
         @Test
-        public void itSucceedsWhenChannelIdExists() {
+        public void itCreatesNotificationChannelWithOptionalChannelIdSetSuccess() {
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName)
                     .anomalyDetectionNotificationConfiguration(Collections.singletonList(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
                             .channelUri("channelUri")
@@ -359,9 +383,9 @@ public class CreateHandlerTest {
 
     private ResourceModel newResourceModel(final AgentPermissions permissions) {
         return ResourceModel.builder()
-                    .profilingGroupName(profilingGroupName)
-                    .agentPermissions(permissions)
-                    .build();
+                   .profilingGroupName(profilingGroupName)
+                   .agentPermissions(permissions)
+                   .build();
     }
 
     private void assertSuccessfulResponse(ProgressEvent<ResourceModel, CallbackContext> response) {

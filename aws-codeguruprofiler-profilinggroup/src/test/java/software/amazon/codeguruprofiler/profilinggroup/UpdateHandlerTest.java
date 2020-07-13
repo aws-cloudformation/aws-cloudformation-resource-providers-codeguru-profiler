@@ -71,28 +71,27 @@ public class UpdateHandlerTest {
     private final GetPolicyRequest getPolicyRequest =
             GetPolicyRequest.builder().profilingGroupName(profilingGroupName).build();
 
+    private final GetNotificationConfigurationRequest getNotificationConfigurationRequest =
+            GetNotificationConfigurationRequest.builder().profilingGroupName(profilingGroupName).build();
+
+    private final RemoveNotificationChannelRequest removeNotificationChannelRequest =
+            RemoveNotificationChannelRequest.builder()
+                    .profilingGroupName(profilingGroupName)
+                    .channelId("channelId")
+                    .build();
+
+    private final AddNotificationChannelsRequest addNotificationChannelsRequest = AddNotificationChannelsRequest.builder()
+            .profilingGroupName(profilingGroupName)
+            .channels(Channel.builder()
+                    .uri("channelUri2")
+                    .eventPublishers(ImmutableSet.of(EventPublisher.ANOMALY_DETECTION))
+                    .build())
+            .build();
 
     private final List<String> principals = Arrays.asList("arn:aws:iam::123456789012:role/UnitTestRole");
 
     @Nested
     class WhenNotificationChannelConfigurationIsProvided {
-        private final GetNotificationConfigurationRequest getNotificationConfigurationRequest =
-                GetNotificationConfigurationRequest.builder().profilingGroupName(profilingGroupName).build();
-
-        private final RemoveNotificationChannelRequest removeChannel1Request =
-                RemoveNotificationChannelRequest.builder()
-                        .profilingGroupName(profilingGroupName)
-                        .channelId("channelId")
-                        .build();
-
-        private final AddNotificationChannelsRequest addChannel2Request = AddNotificationChannelsRequest.builder()
-                .profilingGroupName(profilingGroupName)
-                .channels(Channel.builder()
-                        .uri("channelUri2")
-                        .eventPublishers(ImmutableSet.of(EventPublisher.ANOMALY_DETECTION))
-                        .build())
-                .build();
-
         @BeforeEach
         public void setup() {
             request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).anomalyDetectionNotificationConfiguration(
@@ -104,13 +103,12 @@ public class UpdateHandlerTest {
             doReturn(GetPolicyResponse.builder().build())
                     .when(proxy).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
 
-
             doReturn(RemoveNotificationChannelResponse.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(eq(removeChannel1Request), any());
+                    .when(proxy).injectCredentialsAndInvokeV2(eq(removeNotificationChannelRequest), any());
         }
 
         @Test
-        public void itSuccessfullyAddsNotificationChannel() {
+        public void testSuccess() {
             doReturn(GetNotificationConfigurationResponse.builder()
                     .notificationConfiguration(NotificationConfiguration.builder()
                             .channels(Channel.builder()
@@ -160,7 +158,7 @@ public class UpdateHandlerTest {
 
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
-            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(addChannel2Request), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(addNotificationChannelsRequest), any());
             verifyNoMoreInteractions(proxy);
         }
 
@@ -191,7 +189,7 @@ public class UpdateHandlerTest {
 
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
-            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeChannel1Request), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeNotificationChannelRequest), any());
             verifyNoMoreInteractions(proxy);
 
         }
@@ -228,7 +226,7 @@ public class UpdateHandlerTest {
 
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
-            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeChannel1Request), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeNotificationChannelRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(AddNotificationChannelsRequest.builder().profilingGroupName(profilingGroupName).channels(
                     Channel.builder().id("channelIdNew").uri("channelUri").eventPublishers(EventPublisher.ANOMALY_DETECTION).build())
                             .build()), any());
@@ -275,16 +273,15 @@ public class UpdateHandlerTest {
     class WhenNoPermissionsIsProvided {
         @BeforeEach
         public void setup() {
-            request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).build());
-
+            request =  makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).build());
             doReturn(GetPolicyResponse.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
+                .when(proxy).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
         }
 
         @Test
         public void testSuccess() {
             final ProgressEvent<ResourceModel, CallbackContext> response
-                    = subject.handleRequest(proxy, request, null, logger);
+                = subject.handleRequest(proxy, request, null, logger);
 
             assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
             assertThat(response.getCallbackContext()).isNull();
@@ -307,10 +304,10 @@ public class UpdateHandlerTest {
             @BeforeEach
             public void setup() {
                 doReturn(
-                        GetPolicyResponse.builder()
-                                .policy("RandomString")
-                                .revisionId(revisionId)
-                                .build()
+                    GetPolicyResponse.builder()
+                        .policy("RandomString")
+                        .revisionId(revisionId)
+                        .build()
                 ).when(proxy).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             }
 
@@ -320,13 +317,12 @@ public class UpdateHandlerTest {
 
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(
-                        eq(RemovePermissionRequest.builder()
-                                .profilingGroupName(profilingGroupName)
-                                .actionGroup(ActionGroup.AGENT_PERMISSIONS)
-                                .revisionId(revisionId)
-                                .build()
-                        ),
-                        any());
+                    eq(RemovePermissionRequest.builder().profilingGroupName(profilingGroupName)
+                           .actionGroup(ActionGroup.AGENT_PERMISSIONS)
+                           .revisionId(revisionId)
+                           .build()
+                    ),
+                    any());
                 verifyNoMoreInteractions(proxy);
             }
         }
@@ -335,30 +331,30 @@ public class UpdateHandlerTest {
     @Nested
     class WhenPermissionsIsProvided {
         private final PutPermissionRequest putPermissionRequest =
-                PutPermissionRequest.builder()
-                        .profilingGroupName(profilingGroupName)
-                        .actionGroup(ActionGroup.AGENT_PERMISSIONS)
-                        .principals(principals)
-                        .build();
+            PutPermissionRequest.builder()
+                .profilingGroupName(profilingGroupName)
+                .actionGroup(ActionGroup.AGENT_PERMISSIONS)
+                .principals(principals)
+                .build();
 
         @BeforeEach
         public void setup() {
-            request = makeRequest(
-                    ResourceModel.builder()
-                            .profilingGroupName(profilingGroupName)
-                            .agentPermissions(AgentPermissions.builder().principals(principals).build())
-                            .build()
+            request =  makeRequest(
+                ResourceModel.builder()
+                    .profilingGroupName(profilingGroupName)
+                    .agentPermissions(AgentPermissions.builder().principals(principals).build())
+                    .build()
             );
             doReturn(GetPolicyResponse.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
+                .when(proxy).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             doReturn(PutPermissionResponse.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionRequest), any());
+                .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionRequest), any());
         }
 
         @Test
         public void testSuccess() {
             final ProgressEvent<ResourceModel, CallbackContext> response
-                    = subject.handleRequest(proxy, request, null, logger);
+                = subject.handleRequest(proxy, request, null, logger);
 
             assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
             assertThat(response.getCallbackContext()).isNull();
@@ -380,23 +376,23 @@ public class UpdateHandlerTest {
         @Nested
         class WhenPolicyWasAttached {
             private final PutPermissionRequest putPermissionRequest =
-                    PutPermissionRequest.builder()
-                            .profilingGroupName(profilingGroupName)
-                            .actionGroup(ActionGroup.AGENT_PERMISSIONS)
-                            .principals(principals)
-                            .revisionId(revisionId)
-                            .build();
+                PutPermissionRequest.builder()
+                    .profilingGroupName(profilingGroupName)
+                    .actionGroup(ActionGroup.AGENT_PERMISSIONS)
+                    .principals(principals)
+                    .revisionId(revisionId)
+                    .build();
 
             @BeforeEach
             public void setup() {
                 doReturn(GetPolicyResponse.builder()
-                        .policy("RandomString")
-                        .revisionId(revisionId)
-                        .build()
+                             .policy("RandomString")
+                             .revisionId(revisionId)
+                             .build()
                 ).when(proxy).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
 
                 doReturn(PutPermissionResponse.builder().build())
-                        .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionRequest), any());
+                    .when(proxy).injectCredentialsAndInvokeV2(eq(putPermissionRequest), any());
             }
 
             @Test
@@ -414,13 +410,13 @@ public class UpdateHandlerTest {
     class WhenThereIsAnException {
         @BeforeEach
         public void setup() {
-            request = makeValidRequest();
+            request =  makeValidRequest();
         }
 
         @Test
         public void itThrowsConflictException() {
             doThrow(ConflictException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
             assertThrows(CfnAlreadyExistsException.class, () -> subject.handleRequest(proxy, request, null, logger));
         }
@@ -428,7 +424,7 @@ public class UpdateHandlerTest {
         @Test
         public void itThrowsNotFoundException() {
             doThrow(ResourceNotFoundException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
             assertThrows(CfnNotFoundException.class, () -> subject.handleRequest(proxy, request, null, logger));
         }
@@ -436,7 +432,7 @@ public class UpdateHandlerTest {
         @Test
         public void itThrowsInternalServerException() {
             doThrow(InternalServerException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
             assertThrows(CfnServiceInternalErrorException.class, () -> subject.handleRequest(proxy, request, null, logger));
         }
@@ -444,7 +440,7 @@ public class UpdateHandlerTest {
         @Test
         public void itThrowsThrottlingException() {
             doThrow(ThrottlingException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
             assertThrows(CfnThrottlingException.class, () -> subject.handleRequest(proxy, request, null, logger));
         }
@@ -452,7 +448,7 @@ public class UpdateHandlerTest {
         @Test
         public void itThrowsValidationException() {
             doThrow(ValidationException.builder().build())
-                    .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
             assertThrows(CfnInvalidRequestException.class, () -> subject.handleRequest(proxy, request, null, logger));
         }

@@ -23,13 +23,17 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
+                - "codeguru-profiler:AddNotificationChannels"
                 - "codeguru-profiler:CreateProfilingGroup"
                 - "codeguru-profiler:DeleteProfilingGroup"
                 - "codeguru-profiler:DescribeProfilingGroup"
+                - "codeguru-profiler:GetNotificationConfiguration"
                 - "codeguru-profiler:GetPolicy"
                 - "codeguru-profiler:ListProfilingGroups"
                 - "codeguru-profiler:PutPermission"
+                - "codeguru-profiler:RemoveNotificationChannel"
                 - "codeguru-profiler:RemovePermission"
+                - "sns:Publish"
                 Resource: "*"
 Outputs:
   ExecutionRoleArn:

@@ -1,5 +1,13 @@
 package software.amazon.codeguruprofiler.profilinggroup;
 
+import static java.lang.String.format;
+import static software.amazon.awssdk.services.codeguruprofiler.model.ActionGroup.AGENT_PERMISSIONS;
+import static software.amazon.codeguruprofiler.profilinggroup.NotificationChannelHelper.addChannelNotifications;
+import static software.amazon.codeguruprofiler.profilinggroup.NotificationChannelHelper.anomalyDetectionNotificationConfiguration;
+
+import java.util.List;
+import java.util.Optional;
+
 import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
 import software.amazon.awssdk.services.codeguruprofiler.model.CodeGuruProfilerException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ConflictException;
@@ -19,12 +27,6 @@ import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
-
-import java.util.List;
-import java.util.Optional;
-
-import static java.lang.String.format;
-import static software.amazon.awssdk.services.codeguruprofiler.model.ActionGroup.AGENT_PERMISSIONS;
 
 public class CreateHandler extends BaseHandler<CallbackContext> {
 
@@ -60,7 +62,28 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                 ResourceModel.TYPE_NAME, pgName, awsAccountId));
         }
 
+        Optional<List<Channel>> anomalyDetectionNotificationConfiguration = anomalyDetectionNotificationConfiguration(model);
+        if (anomalyDetectionNotificationConfiguration.isPresent()) {
+            putChannelNotifications(proxy, logger, pgName, awsAccountId, anomalyDetectionNotificationConfiguration.get());
+            logger.log(format("%s [%s] for accountId [%s] has successfully added a Notification Channel!",
+                    ResourceModel.TYPE_NAME, pgName, awsAccountId));
+        }
+
         return ProgressEvent.defaultSuccessHandler(model);
+    }
+
+    private void putChannelNotifications(final AmazonWebServicesClientProxy proxy, final Logger logger,
+                                         final String pgName, final String awsAccountId, List<Channel> anomalyDetectionNotificationConfiguration) {
+        safelyInvokeApi(() -> {
+            try {
+                addChannelNotifications(pgName, anomalyDetectionNotificationConfiguration, proxy, profilerClient);
+            } catch (CodeGuruProfilerException addChannelNotificationException) {
+                logger.log(format("%s [%s] for accountId [%s] has failed when adding Channel Notification, trying to delete the profiling group!",
+                        ResourceModel.TYPE_NAME, pgName, awsAccountId));
+                deleteProfilingGroup(proxy, logger, pgName, awsAccountId, addChannelNotificationException);
+                throw addChannelNotificationException;
+            }
+        });
     }
 
     private void putAgentPermissions(final AmazonWebServicesClientProxy proxy, final Logger logger,
@@ -84,7 +107,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
     }
 
     private void deleteProfilingGroup(AmazonWebServicesClientProxy proxy, Logger logger,
-                                      String pgName, String awsAccountId, CodeGuruProfilerException putPermissionException) {
+                                      String pgName, String awsAccountId, CodeGuruProfilerException exception) {
         DeleteProfilingGroupRequest deletePgRequest = DeleteProfilingGroupRequest.builder().profilingGroupName(pgName).build();
         try {
             proxy.injectCredentialsAndInvokeV2(deletePgRequest, profilerClient::deleteProfilingGroup);
@@ -93,8 +116,8 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         } catch (CodeGuruProfilerException deleteException) {
             logger.log(format("%s [%s] for accountId [%s] has failed when deleting the profiling group!",
                 ResourceModel.TYPE_NAME, pgName, awsAccountId));
-            putPermissionException.addSuppressed(deleteException);
-            throw putPermissionException;
+            exception.addSuppressed(deleteException);
+            throw exception;
         }
     }
 

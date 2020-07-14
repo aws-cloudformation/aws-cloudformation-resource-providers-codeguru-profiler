@@ -10,6 +10,7 @@
             "amazon",
             "codeguruprofiler",
             "profilinggroup"
-        ]
+        ],
+        "protocolVersion": "2.0.0"
     }
 }

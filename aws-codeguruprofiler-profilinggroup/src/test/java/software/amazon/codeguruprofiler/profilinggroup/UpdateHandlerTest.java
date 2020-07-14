@@ -1,16 +1,26 @@
 package software.amazon.codeguruprofiler.profilinggroup;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import software.amazon.awssdk.services.codeguruprofiler.model.ActionGroup;
+import software.amazon.awssdk.services.codeguruprofiler.model.AddNotificationChannelsRequest;
+import software.amazon.awssdk.services.codeguruprofiler.model.Channel;
 import software.amazon.awssdk.services.codeguruprofiler.model.ConflictException;
+import software.amazon.awssdk.services.codeguruprofiler.model.EventPublisher;
+import software.amazon.awssdk.services.codeguruprofiler.model.GetNotificationConfigurationRequest;
+import software.amazon.awssdk.services.codeguruprofiler.model.GetNotificationConfigurationResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.GetPolicyRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.GetPolicyResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
+import software.amazon.awssdk.services.codeguruprofiler.model.NotificationConfiguration;
 import software.amazon.awssdk.services.codeguruprofiler.model.PutPermissionRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.PutPermissionResponse;
+import software.amazon.awssdk.services.codeguruprofiler.model.RemoveNotificationChannelRequest;
+import software.amazon.awssdk.services.codeguruprofiler.model.RemoveNotificationChannelResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.RemovePermissionRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ThrottlingException;
@@ -27,6 +37,7 @@ import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,9 +69,182 @@ public class UpdateHandlerTest {
     private final String revisionId = "TestRevisionId-123";
 
     private final GetPolicyRequest getPolicyRequest =
-        GetPolicyRequest.builder().profilingGroupName(profilingGroupName).build();
+            GetPolicyRequest.builder().profilingGroupName(profilingGroupName).build();
 
     private final List<String> principals = Arrays.asList("arn:aws:iam::123456789012:role/UnitTestRole");
+
+    @Nested
+    class WhenNotificationChannelConfigurationIsProvided {
+        private final GetNotificationConfigurationRequest getNotificationConfigurationRequest =
+                GetNotificationConfigurationRequest.builder().profilingGroupName(profilingGroupName).build();
+
+        private final RemoveNotificationChannelRequest removeChannel1Request =
+                RemoveNotificationChannelRequest.builder()
+                        .profilingGroupName(profilingGroupName)
+                        .channelId("channelId")
+                        .build();
+
+        private final AddNotificationChannelsRequest addChannel2Request = AddNotificationChannelsRequest.builder()
+                .profilingGroupName(profilingGroupName)
+                .channels(Channel.builder()
+                        .uri("channelUri2")
+                        .eventPublishers(ImmutableSet.of(EventPublisher.ANOMALY_DETECTION))
+                        .build())
+                .build();
+
+        @BeforeEach
+        public void setup() {
+            request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).anomalyDetectionNotificationConfiguration(
+                    Collections.singletonList(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                            .channelUri("channelUri")
+                            .build()))
+                    .build());
+
+            doReturn(GetPolicyResponse.builder().build())
+                    .when(proxy).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
+
+            doReturn(RemoveNotificationChannelResponse.builder().build())
+                    .when(proxy).injectCredentialsAndInvokeV2(eq(removeChannel1Request), any());
+        }
+
+        @Test
+        public void itOnlyCallsAddNotificationChannelWhenUpdatedModelHasAdditionalChannelsNoIdSet() {
+            doReturn(GetNotificationConfigurationResponse.builder()
+                    .notificationConfiguration(NotificationConfiguration.builder()
+                            .channels(Channel.builder()
+                                    .id("channelId")
+                                    .uri("channelUri")
+                                    .eventPublishers(EventPublisher.ANOMALY_DETECTION)
+                                    .build())
+                            .build())
+                    .build())
+                    .when(proxy).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
+
+            // the new model should have the additional channel
+            request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).anomalyDetectionNotificationConfiguration(
+                    ImmutableList.of(
+                            software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                                    .channelUri("channelUri")
+                                    .build(),
+                            software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                                    .channelUri("channelUri2")
+                                    .build()))
+                    .build());
+
+            subject.handleRequest(proxy, request, null, logger);
+
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(addChannel2Request), any());
+            verifyNoMoreInteractions(proxy);
+        }
+
+        @Test
+        public void itOnlyCallsRemoveNotificationChannelWhenUpdatedModelHasLessChannelsNoIdSet() {
+            doReturn(GetNotificationConfigurationResponse.builder()
+                    .notificationConfiguration(NotificationConfiguration.builder()
+                            .channels(Channel.builder()
+                                            .id("channelId")
+                                            .uri("channelUri")
+                                            .eventPublishers(EventPublisher.ANOMALY_DETECTION)
+                                            .build(),
+                                    Channel.builder()
+                                            .id("channelId2")
+                                            .uri("channelUri2")
+                                            .build())
+                            .build())
+                    .build())
+                    .when(proxy).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
+
+            request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).anomalyDetectionNotificationConfiguration(
+                    ImmutableList.of(software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                            .channelUri("channelUri2")
+                            .build()))
+                    .build());
+
+            subject.handleRequest(proxy, request, null, logger);
+
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeChannel1Request), any());
+            verifyNoMoreInteractions(proxy);
+
+        }
+
+        @Test
+        public void itUpdatesChannelWithSameUriButDifferentId() {
+            doReturn(GetNotificationConfigurationResponse.builder()
+                    .notificationConfiguration(NotificationConfiguration.builder()
+                            .channels(Channel.builder()
+                                            .id("channelId")
+                                            .uri("channelUri")
+                                            .eventPublishers(EventPublisher.ANOMALY_DETECTION)
+                                            .build(),
+                                    Channel.builder()
+                                            .id("channelId2")
+                                            .uri("channelUri2")
+                                            .build())
+                            .build())
+                    .build())
+                    .when(proxy).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
+
+            request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).anomalyDetectionNotificationConfiguration(
+                    ImmutableList.of(
+                            software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                                    .channelId("channelIdNew")
+                                    .channelUri("channelUri")
+                                    .build(),
+                            software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                                    .channelUri("channelUri2")
+                                    .build()))
+                    .build());
+
+            subject.handleRequest(proxy, request, null, logger);
+
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeChannel1Request), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(AddNotificationChannelsRequest.builder().profilingGroupName(profilingGroupName).channels(
+                    Channel.builder().id("channelIdNew").uri("channelUri").eventPublishers(EventPublisher.ANOMALY_DETECTION).build())
+                            .build()), any());
+            verifyNoMoreInteractions(proxy);
+
+        }
+
+        @Test
+        public void itDoesNotAddOrDeleteNotificationChannelWithNoChangeSet() {
+            doReturn(GetNotificationConfigurationResponse.builder()
+                    .notificationConfiguration(NotificationConfiguration.builder()
+                            .channels(Channel.builder()
+                                            .id("channelId")
+                                            .uri("channelUri")
+                                            .eventPublishers(EventPublisher.ANOMALY_DETECTION)
+                                            .build(),
+                                    Channel.builder()
+                                            .id("channelId2")
+                                            .uri("channelUri2")
+                                            .build())
+                            .build())
+                    .build())
+                    .when(proxy).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
+
+            request = makeRequest(ResourceModel.builder().profilingGroupName(profilingGroupName).anomalyDetectionNotificationConfiguration(
+                    ImmutableList.of(
+                            software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                                    .channelUri("channelUri")
+                                    .build(),
+                            software.amazon.codeguruprofiler.profilinggroup.Channel.builder()
+                                    .channelUri("channelUri2")
+                                    .build()))
+                    .build());
+
+            subject.handleRequest(proxy, request, null, logger);
+
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
+            verifyNoMoreInteractions(proxy);
+        }
+    }
 
     @Nested
     class WhenNoPermissionsIsProvided {
@@ -110,8 +294,7 @@ public class UpdateHandlerTest {
 
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(
-                    eq(RemovePermissionRequest.builder()
-                           .profilingGroupName(profilingGroupName)
+                    eq(RemovePermissionRequest.builder().profilingGroupName(profilingGroupName)
                            .actionGroup(ActionGroup.AGENT_PERMISSIONS)
                            .revisionId(revisionId)
                            .build()

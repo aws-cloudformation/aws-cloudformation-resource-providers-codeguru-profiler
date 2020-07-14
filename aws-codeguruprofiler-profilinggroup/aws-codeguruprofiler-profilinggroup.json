@@ -10,6 +10,31 @@
     "ArnIam": {
       "type": "string",
       "pattern": "^arn:aws(-(cn|gov))?:iam::([0-9]{12}):[^.]+$"
+    },
+    "ChannelId": {
+      "description": "Unique identifier for each Channel in the notification configuration of a Profiling Group",
+      "type": "string",
+      "pattern": "[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"
+    },
+    "ChannelUri": {
+      "description": "Unique arn of the resource to be used for notifications. We support a valid SNS topic arn as a channel uri.",
+      "type": "string",
+      "pattern": "^arn:aws(-(cn|gov))?:[a-z-]+:(([a-z]+-)+[0-9]+):([0-9]{12}):[^.]+$"
+    },
+    "Channel": {
+      "description": "Notification medium for users to get alerted for events that occur in application profile. We support SNS topic as a notification channel.",
+      "type": "object",
+      "required": [
+        "channelUri"
+      ],
+      "properties": {
+        "channelId": {
+          "$ref": "#/definitions/ChannelId"
+        },
+        "channelUri": {
+          "$ref": "#/definitions/ChannelUri"
+        }
+      }
     }
   },
   "properties": {
@@ -45,6 +70,13 @@
         }
       }
     },
+    "AnomalyDetectionNotificationConfiguration": {
+      "description": "Configuration for Notification Channels for Anomaly Detection feature in CodeGuru Profiler which enables customers to detect anomalies in the application profile for those methods that represent the highest proportion of CPU time or latency",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Channel"
+      }
+    },
     "Arn": {
       "description": "The Amazon Resource Name (ARN) of the specified profiling group.",
       "$ref": "#/definitions/Arn",
@@ -70,6 +102,8 @@
   "handlers": {
     "create": {
       "permissions": [
+        "sns:Publish",
+        "codeguru-profiler:AddNotificationChannels",
         "codeguru-profiler:CreateProfilingGroup",
         "codeguru-profiler:PutPermission"
       ]
@@ -81,6 +115,10 @@
     },
     "update": {
       "permissions": [
+        "sns:Publish",
+        "codeguru-profiler:AddNotificationChannels",
+        "codeguru-profiler:GetNotificationConfiguration",
+        "codeguru-profiler:RemoveNotificationChannel",
         "codeguru-profiler:PutPermission",
         "codeguru-profiler:RemovePermission",
         "codeguru-profiler:GetPolicy"

@@ -3,13 +3,13 @@
   "description": "This resource schema represents the Profiling Group resource in the Amazon CodeGuru Profiler service.",
   "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-codeguru-profiler",
   "definitions": {
-    "Arn": {
+    "ProfilingGroupArn": {
       "type": "string",
-      "pattern": "^arn:aws(-(cn|gov))?:[a-z-]+:(([a-z]+-)+[0-9]+):([0-9]{12}):[^.]+$"
+      "pattern": "^arn:aws([-\\w]*):codeguru-profiler:(([a-z]+-)+[0-9]+):([0-9]{12}):profilingGroup/[^.]+$"
     },
-    "ArnIam": {
+    "IamArn": {
       "type": "string",
-      "pattern": "^arn:aws(-(cn|gov))?:iam::([0-9]{12}):[^.]+$"
+      "pattern": "^arn:aws([-\\w]*):iam::([0-9]{12}):[^.]+$"
     },
     "ChannelId": {
       "description": "Unique identifier for each Channel in the notification configuration of a Profiling Group",
@@ -19,7 +19,7 @@
     "ChannelUri": {
       "description": "Unique arn of the resource to be used for notifications. We support a valid SNS topic arn as a channel uri.",
       "type": "string",
-      "pattern": "^arn:aws(-(cn|gov))?:[a-z-]+:(([a-z]+-)+[0-9]+):([0-9]{12}):[^.]+$"
+      "pattern": "^arn:aws([-\\w]*):[a-z-]+:(([a-z]+-)+[0-9]+)?:([0-9]{12}):[^.]+$"
     },
     "Channel": {
       "description": "Notification medium for users to get alerted for events that occur in application profile. We support SNS topic as a notification channel.",
@@ -65,7 +65,7 @@
           "description": "The principals for the agent permissions.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ArnIam"
+            "$ref": "#/definitions/IamArn"
           }
         }
       }
@@ -79,7 +79,7 @@
     },
     "Arn": {
       "description": "The Amazon Resource Name (ARN) of the specified profiling group.",
-      "$ref": "#/definitions/Arn",
+      "$ref": "#/definitions/ProfilingGroupArn",
       "examples": [
         "arn:aws:codeguru-profiler:us-east-1:000000000000:profilingGroup/My-example-profiling-group"
       ]

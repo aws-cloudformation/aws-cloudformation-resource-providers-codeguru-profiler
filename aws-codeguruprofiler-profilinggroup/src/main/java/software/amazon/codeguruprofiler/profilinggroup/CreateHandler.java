@@ -6,7 +6,9 @@ import static software.amazon.codeguruprofiler.profilinggroup.NotificationChanne
 import static software.amazon.codeguruprofiler.profilinggroup.NotificationChannelHelper.anomalyDetectionNotificationConfiguration;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
 import software.amazon.awssdk.services.codeguruprofiler.model.CodeGuruProfilerException;
@@ -42,18 +44,26 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         final String awsAccountId = request.getAwsAccountId();
         final ResourceModel model = request.getDesiredResourceState();
         final String pgName = model.getProfilingGroupName();
+        final Optional<Map<String, String>> tags = tagsFromModel(model);
         final String computePlatform = model.getComputePlatform();
 
-        CreateProfilingGroupRequest createProfilingGroupRequest = CreateProfilingGroupRequest.builder()
-            .profilingGroupName(pgName)
-            .computePlatform(computePlatform)
-            .clientToken(request.getClientRequestToken())
-            .build();
+        final CreateProfilingGroupRequest createProfilingGroupRequest =
+            getCreateProfilingGroupRequest(
+                pgName,
+                computePlatform,
+                request.getClientRequestToken(),
+                tags
+            );
 
         safelyInvokeApi(() -> {
             proxy.injectCredentialsAndInvokeV2(createProfilingGroupRequest, profilerClient::createProfilingGroup);
         });
-        logger.log(format("%s [%s] for accountId [%s] has been successfully created!", ResourceModel.TYPE_NAME, pgName, awsAccountId));
+
+        if (tags.isPresent()) {
+            logger.log(format("%s [%s] for accountId [%s] with tags [%s] has been successfully created!", ResourceModel.TYPE_NAME, pgName, awsAccountId, tags.get()));
+        } else {
+            logger.log(format("%s [%s] for accountId [%s] has been successfully created!", ResourceModel.TYPE_NAME, pgName, awsAccountId));
+        }
 
         Optional<List<String>> principals = principalsForAgentPermissionsFrom(model);
         if (principals.isPresent()) {
@@ -145,5 +155,35 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             return Optional.empty();
         }
         return Optional.of(model.getAgentPermissions().getPrincipals());
+    }
+
+    private static CreateProfilingGroupRequest getCreateProfilingGroupRequest(
+        final String pgName,
+        final String computePlatform,
+        final String requestToken,
+        final Optional<Map<String, String>> tags
+    ) {
+        if (tags.isPresent()) {
+            return CreateProfilingGroupRequest.builder()
+                       .profilingGroupName(pgName)
+                       .computePlatform(computePlatform)
+                       .clientToken(requestToken)
+                       .tags(tags.get())
+                       .build();
+        }
+        return CreateProfilingGroupRequest.builder()
+                   .profilingGroupName(pgName)
+                   .computePlatform(computePlatform)
+                   .clientToken(requestToken)
+                   .build();
+    }
+
+    private static Optional<Map<String, String>> tagsFromModel(final ResourceModel model) {
+        List<Tag> tags = model.getTags();
+        if (tags == null || tags.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(tags.stream().collect(Collectors.toMap(Tag :: getKey, Tag :: getValue)));
     }
 }

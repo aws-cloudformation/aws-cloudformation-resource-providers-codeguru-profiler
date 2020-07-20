@@ -23,6 +23,8 @@ import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
+import java.util.HashMap;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,6 +61,7 @@ public class ReadHandlerTest {
                 .profilingGroup(ProfilingGroupDescription.builder()
                         .name("IronMan-Suit-34")
                         .arn(arn)
+                        .tags(new HashMap<String, String>() {{ put("superhero", "blackWidow"); }})
                         .build())
                 .build())
                 .when(proxy).injectCredentialsAndInvokeV2(
@@ -76,6 +79,7 @@ public class ReadHandlerTest {
         assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
         assertThat(response.getResourceModel()).isEqualTo(request.getDesiredResourceState());
         assertThat(response.getResourceModel().getArn()).isEqualTo(arn);
+        assertThat(response.getResourceModel().getTags()).containsOnly(Tag.builder().key("superhero").value("blackWidow").build());
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
     }

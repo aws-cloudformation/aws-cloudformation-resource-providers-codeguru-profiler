@@ -16,6 +16,8 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import java.util.ArrayList;
 import java.util.List;
 
+import static software.amazon.codeguruprofiler.profilinggroup.TagUtils.convertTagMapIntoSet;
+
 public class ListHandler extends BaseHandler<CallbackContext> {
 
     private final CodeGuruProfilerClient profilerClient = CodeGuruProfilerClientBuilder.create();
@@ -42,6 +44,7 @@ public class ListHandler extends BaseHandler<CallbackContext> {
             response.profilingGroups().forEach(pg ->
                     models.add(ResourceModel.builder()
                             .profilingGroupName(pg.name())
+                            .tags(new ArrayList<>(convertTagMapIntoSet(pg.tags())))
                             .arn(pg.arn()).build())
             );
 

@@ -158,7 +158,8 @@
         "codeguru-profiler:RemovePermission",
         "codeguru-profiler:GetPolicy",
         "codeguru-profiler:TagResource",
-        "codeguru-profiler:UntagResource"
+        "codeguru-profiler:UntagResource",
+        "codeguru-profiler:ListTagsForResource"
       ]
     },
     "delete": {

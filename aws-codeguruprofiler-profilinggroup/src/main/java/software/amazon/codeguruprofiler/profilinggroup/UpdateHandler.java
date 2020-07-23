@@ -34,8 +34,24 @@ import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 public class UpdateHandler extends BaseHandler<CallbackContext> {
-
     private final CodeGuruProfilerClient profilerClient = CodeGuruProfilerClientBuilder.create();
+
+    private final UpdateTagsFunction<AmazonWebServicesClientProxy, ResourceModel, String, String, Logger> updateTagFunction;
+
+    public UpdateHandler() {
+        super();
+        updateTagFunction = TagUtils::updateTags;
+    }
+
+    public UpdateHandler(UpdateTagsFunction<AmazonWebServicesClientProxy, ResourceModel, String, String, Logger> updateTag) {
+        super();
+        updateTagFunction = updateTag;
+    }
+
+    @FunctionalInterface
+    public interface UpdateTagsFunction<Proxy, Model, AccountId, ResourceArn, Logger> {
+        void apply(Proxy s, Model t, AccountId u, ResourceArn v, Logger w);
+    }
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
@@ -47,10 +63,13 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
 
         final String awsAccountId = request.getAwsAccountId();
         final String profilingGroupName = model.getProfilingGroupName();
+        final String profilingGroupArn = model.getArn();
 
         Optional<List<String>> principals = principalsForAgentPermissionsFrom(model);
 
         try {
+            updateTagFunction.apply(proxy, model, awsAccountId, profilingGroupArn, logger);
+
             GetPolicyResponse getPolicyResponse = getExistingPolicy(proxy, profilingGroupName);
 
             if (principals.isPresent()) {

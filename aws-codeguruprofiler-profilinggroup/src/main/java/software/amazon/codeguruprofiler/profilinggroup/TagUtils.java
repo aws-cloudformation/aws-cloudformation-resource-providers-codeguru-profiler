@@ -11,7 +11,6 @@ import software.amazon.awssdk.services.codeguruprofiler.model.UntagResourceRespo
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -117,7 +116,7 @@ public class TagUtils {
         }
     }
 
-    private static UntagResourceResponse untagResource(AmazonWebServicesClientProxy proxy, String resourceArn, Collection<String> tagKeys) {
+    private static UntagResourceResponse untagResource(AmazonWebServicesClientProxy proxy, String resourceArn, Set<String> tagKeys) {
         return proxy.injectCredentialsAndInvokeV2(
             UntagResourceRequest.builder().resourceArn(resourceArn).tagKeys(tagKeys).build(),
             profilerClient::untagResource

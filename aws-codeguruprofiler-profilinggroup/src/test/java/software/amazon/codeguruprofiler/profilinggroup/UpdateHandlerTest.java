@@ -35,6 +35,7 @@ import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+import software.amazon.codeguruprofiler.profilinggroup.UpdateHandler.UpdateTagsFunction;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -60,7 +61,9 @@ public class UpdateHandlerTest {
     @Mock
     private Logger logger = mock(Logger.class);
 
-    private UpdateHandler subject = new UpdateHandler();
+    private UpdateTagsFunction updateTagFunction = mock(UpdateTagsFunction.class);
+
+    private UpdateHandler subject = new UpdateHandler(updateTagFunction);
 
     private ResourceHandlerRequest<ResourceModel> request;
 
@@ -380,6 +383,33 @@ public class UpdateHandlerTest {
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(putPermissionRequest), any());
                 verifyNoMoreInteractions(proxy);
             }
+        }
+    }
+
+    @Nested
+    class WhenTagsAreProvided {
+        private final String groupArn = "arn:aws:codeguru-profiler:us-east-1:123456789012:profilingGroup/" + profilingGroupName;
+        private final List<Tag> newTags = Arrays.asList(Tag.builder().key("TestKey").value("TestValue").build());
+        private ResourceModel desiredModel = ResourceModel.builder()
+                                                 .profilingGroupName(profilingGroupName)
+                                                 .arn(groupArn)
+                                                 .tags(newTags)
+                                                 .build();
+
+        @BeforeEach
+        public void setup() {
+            request = makeRequest(desiredModel);
+
+            doReturn(GetPolicyResponse.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(GetPolicyRequest.class), any());
+        }
+
+        @Test
+        public void itCallsUpdateTagsWithCorrectParameters() {
+            subject.handleRequest(proxy, request, null, logger);
+
+            verify(updateTagFunction, times(1))
+                .apply(proxy, desiredModel, request.getAwsAccountId(), groupArn, logger );
         }
     }
 

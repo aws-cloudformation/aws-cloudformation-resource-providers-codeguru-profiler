@@ -435,7 +435,7 @@ public class UpdateHandlerTest {
                         request.getAwsAccountId(),
                         String.join(":",
                             "arn",
-                            request.getAwsPartition(),
+                            "aws",
                             "codeguru-profiler",
                             request.getRegion(),
                             request.getAwsAccountId(),

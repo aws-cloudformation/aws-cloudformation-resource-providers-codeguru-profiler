@@ -138,7 +138,6 @@
         "codeguru-profiler:AddNotificationChannels",
         "codeguru-profiler:CreateProfilingGroup",
         "codeguru-profiler:PutPermission",
-        "codeguru-profiler:PutPermission",
         "codeguru-profiler:TagResource"
       ]
     },

@@ -16,7 +16,6 @@ public class RequestBuilder {
                    .desiredResourceState(model)
                    .clientRequestToken("clientTokenXXX")
                    .awsAccountId("111111111111")
-                   .awsPartition("aws")
                    .region("us-east-1")
                    .build();
     }

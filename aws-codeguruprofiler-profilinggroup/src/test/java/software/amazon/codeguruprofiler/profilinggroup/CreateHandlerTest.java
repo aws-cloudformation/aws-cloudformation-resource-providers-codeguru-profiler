@@ -304,7 +304,10 @@ public class CreateHandlerTest {
         public void setup() {
             doReturn(CreateProfilingGroupResponse.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
-            ResourceModel model = newResourceModelWithTags(Arrays.asList(Tag.builder().key(tagKey).value(tagValue).build()));
+            ResourceModel model = ResourceModel.builder()
+                                      .profilingGroupName(profilingGroupName)
+                                      .tags(Arrays.asList(Tag.builder().key(tagKey).value(tagValue).build()))
+                                      .build();
             request = makeRequest(model);
         }
 
@@ -414,13 +417,6 @@ public class CreateHandlerTest {
         return ResourceModel.builder()
                    .profilingGroupName(profilingGroupName)
                    .agentPermissions(permissions)
-                   .build();
-    }
-
-    private ResourceModel newResourceModelWithTags(final List<Tag> tags) {
-        return ResourceModel.builder()
-                   .profilingGroupName(profilingGroupName)
-                   .tags(tags)
                    .build();
     }
 

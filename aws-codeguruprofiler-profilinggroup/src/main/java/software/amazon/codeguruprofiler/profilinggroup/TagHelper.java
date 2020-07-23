@@ -40,79 +40,90 @@ public class TagHelper {
 
         Set<Tag> desiredTags = tagsFromModel(desiredModel);
 
-        if (!existingTags.equals(desiredTags)) {
+        if (existingTags.equals(desiredTags)) {
             logger.log(
-                String.format("Tag change detected for [%s] for accountId [%s]: Old: %s, New: %s",
+                String.format("No tag change detected for [%s] for accountId [%s]: Old: %s, New: %s",
                     resourceArn,
                     awsAccountId,
                     existingTags,
                     desiredTags
                 )
             );
-            final Set<Tag> tagsToRemove = new HashSet<>(existingTags);
-            tagsToRemove.removeIf(desiredTags::contains);
-            desiredTags.removeIf(existingTags::contains);
+            return;
+        }
 
-            if (!tagsToRemove.isEmpty()) {
+        logger.log(
+            String.format("Tag change detected for [%s] for accountId [%s]: Old: %s, New: %s",
+                resourceArn,
+                awsAccountId,
+                existingTags,
+                desiredTags
+            )
+        );
+
+        final Set<Tag> tagsToRemove = new HashSet<>(existingTags);
+        tagsToRemove.removeIf(desiredTags::contains);
+        desiredTags.removeIf(existingTags::contains);
+
+        if (!tagsToRemove.isEmpty()) {
+            logger.log(
+                String.format("Untagging tags from [%s] for accountId [%s]: %s",
+                    resourceArn,
+                    awsAccountId,
+                    tagsToRemove
+                )
+            );
+            untagResource(proxy, resourceArn, tagsToRemove.stream().map(Tag::getKey).collect(Collectors.toSet()));
+            logger.log(
+                String.format("Successfully untagged tags from [%s] for accountId [%s]",
+                    resourceArn,
+                    awsAccountId
+                )
+            );
+        }
+
+        if (!desiredTags.isEmpty()) {
+            logger.log(
+                String.format("Adding new tags to [%s] for accountId [%s]: %s",
+                    resourceArn,
+                    awsAccountId,
+                    desiredTags
+                )
+            );
+            try {
+                tagResource(proxy, resourceArn, desiredTags.stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue)));
+            } catch(CodeGuruProfilerException e) {
                 logger.log(
-                    String.format("Untagging tags from [%s] for accountId [%s]: %s",
-                        resourceArn,
-                        awsAccountId,
-                        tagsToRemove
-                    )
-                );
-                untagResource(proxy, resourceArn, tagsToRemove.stream().map(Tag::getKey).collect(Collectors.toSet()));
-                logger.log(
-                    String.format("Successfully untagged tags from [%s] for accountId [%s]",
+                    String.format("Failed to add new tags to [%s] for accountId [%s]",
                         resourceArn,
                         awsAccountId
                     )
                 );
-            }
 
-            if (!desiredTags.isEmpty()) {
-                logger.log(
-                    String.format("Adding new tags to [%s] for accountId [%s]: %s",
-                        resourceArn,
-                        awsAccountId,
-                        desiredTags
-                    )
-                );
-                try {
-                    tagResource(proxy, resourceArn, desiredTags.stream().collect(Collectors.toMap(Tag :: getKey, Tag :: getValue)));
-                } catch(CodeGuruProfilerException e) {
+                if (!tagsToRemove.isEmpty()) {
                     logger.log(
-                        String.format("Failed to add new tags to [%s] for accountId [%s]",
+                        String.format("Adding back old tags to [%s] for accountId [%s]: %s",
+                            resourceArn,
+                            awsAccountId,
+                            desiredTags
+                        )
+                    );
+                    tagResource(proxy, resourceArn, tagsToRemove.stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue)));
+                    logger.log(
+                        String.format("Successfully added back old tags to [%s] for accountId [%s]",
                             resourceArn,
                             awsAccountId
                         )
                     );
-
-                    if (!tagsToRemove.isEmpty()) {
-                        logger.log(
-                            String.format("Adding back old tags to [%s] for accountId [%s]: %s",
-                                resourceArn,
-                                awsAccountId,
-                                desiredTags
-                            )
-                        );
-                        tagResource(proxy, resourceArn, tagsToRemove.stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue)));
-                        logger.log(
-                            String.format("Successfully added back old tags to [%s] for accountId [%s]",
-                                resourceArn,
-                                awsAccountId
-                            )
-                        );
-                    }
-                    throw e;
                 }
-                logger.log(
-                    String.format("Successfully added new tags to [%s] for accountId [%s]",
-                        resourceArn,
-                        awsAccountId
-                    )
-                );
+                throw e;
             }
+            logger.log(
+                String.format("Successfully added new tags to [%s] for accountId [%s]",
+                    resourceArn,
+                    awsAccountId
+                )
+            );
         }
     }
 

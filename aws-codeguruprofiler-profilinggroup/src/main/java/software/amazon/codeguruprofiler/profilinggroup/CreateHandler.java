@@ -184,6 +184,6 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             return Optional.empty();
         }
 
-        return Optional.of(tags.stream().collect(Collectors.toMap(Tag :: getKey, Tag :: getValue)));
+        return Optional.of(tags.stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue)));
     }
 }

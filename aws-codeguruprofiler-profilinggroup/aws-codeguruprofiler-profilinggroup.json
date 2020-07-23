@@ -114,7 +114,7 @@
         "$ref": "#/definitions/Tag"
       },
       "maxItems": 50,
-      "uniqueItems": false
+      "uniqueItems": true
     }
   },
   "additionalProperties": false,

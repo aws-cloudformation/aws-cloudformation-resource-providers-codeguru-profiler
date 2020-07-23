@@ -40,7 +40,7 @@ public class TagUtils {
 
         Set<Tag> desiredTags = tagsFromModel(desiredModel);
 
-        if (!existingTags.containsAll(desiredTags)) {
+        if (!existingTags.equals(desiredTags)) {
             logger.log(
                 String.format("Tag change detected for [%s] for accountId [%s]: Old: %s, New: %s",
                     resourceArn,

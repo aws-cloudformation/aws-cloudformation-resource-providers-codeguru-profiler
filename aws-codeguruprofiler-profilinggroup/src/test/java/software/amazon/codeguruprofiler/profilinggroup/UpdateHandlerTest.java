@@ -61,7 +61,8 @@ public class UpdateHandlerTest {
     @Mock
     private Logger logger = mock(Logger.class);
 
-    private UpdateTagsFunction updateTagFunction = mock(UpdateTagsFunction.class);
+    @SuppressWarnings("unchecked")
+    private UpdateTagsFunction<AmazonWebServicesClientProxy, ResourceModel, String, String, Logger> updateTagFunction = mock(UpdateTagsFunction.class);
 
     private UpdateHandler subject = new UpdateHandler(updateTagFunction);
 

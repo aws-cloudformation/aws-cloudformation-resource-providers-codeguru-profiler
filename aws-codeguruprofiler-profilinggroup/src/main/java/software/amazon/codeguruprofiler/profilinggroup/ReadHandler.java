@@ -16,6 +16,10 @@ import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
+import java.util.ArrayList;
+
+import static software.amazon.codeguruprofiler.profilinggroup.TagHelper.convertTagMapIntoSet;
+
 public class ReadHandler extends BaseHandler<CallbackContext> {
 
     private final CodeGuruProfilerClient profilerClient = CodeGuruProfilerClientBuilder.create();
@@ -38,6 +42,7 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
             DescribeProfilingGroupResponse response = proxy.injectCredentialsAndInvokeV2(describeProfilingGroupRequest, profilerClient::describeProfilingGroup);
             model.setProfilingGroupName(response.profilingGroup().name()); // This is not needed but making sure the response is the same as the request!
             model.setArn(response.profilingGroup().arn());
+            model.setTags(new ArrayList<>(convertTagMapIntoSet(response.profilingGroup().tags())));
 
             logger.log(String.format("%s [%s] for accountId [%s] has been successfully read!", ResourceModel.TYPE_NAME, model.getProfilingGroupName(), awsAccountId));
 

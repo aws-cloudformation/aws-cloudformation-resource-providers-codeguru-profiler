@@ -19,6 +19,9 @@ import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,6 +55,7 @@ public class ListHandlerTest {
         final ProfilingGroupDescription profilingGroupDescription = ProfilingGroupDescription.builder()
                         .name("IronMan-Suit-34")
                         .arn(arn)
+                        .tags(new HashMap<String, String>() {{ put("superhero", "blackWidow"); }})
                         .build();
 
         doReturn(ListProfilingGroupsResponse.builder()
@@ -74,6 +78,7 @@ public class ListHandlerTest {
         final ResourceModel expectedModel = ResourceModel.builder()
                 .profilingGroupName(profilingGroupDescription.name())
                 .arn(profilingGroupDescription.arn())
+                .tags(new ArrayList<>(TagHelper.convertTagMapIntoSet(profilingGroupDescription.tags())))
                 .build();
 
         assertThat(response).isNotNull();

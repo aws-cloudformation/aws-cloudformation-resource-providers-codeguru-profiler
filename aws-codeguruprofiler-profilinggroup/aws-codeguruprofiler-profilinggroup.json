@@ -11,6 +11,29 @@
       "type": "string",
       "pattern": "^arn:aws([-\\w]*):iam::([0-9]{12}):[^.]+$"
     },
+    "Tag": {
+      "description": "A key-value pair to associate with a resource.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Key": {
+          "description": "The key name of the tag. You can specify a value that is 1 to 128 Unicode characters in length and cannot be prefixed with aws:. The allowed characters across services are: letters, numbers, and spaces representable in UTF-8, and the following characters: + - = . _ : / @.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "Value": {
+          "description": "The value for the tag. You can specify a value that is 0 to 256 Unicode characters in length. The allowed characters across services are: letters, numbers, and spaces representable in UTF-8, and the following characters: + - = . _ : / @.",
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "Value",
+        "Key"
+      ]
+    },
     "ChannelId": {
       "description": "Unique identifier for each Channel in the notification configuration of a Profiling Group",
       "type": "string",
@@ -83,6 +106,15 @@
       "examples": [
         "arn:aws:codeguru-profiler:us-east-1:000000000000:profilingGroup/My-example-profiling-group"
       ]
+    },
+    "Tags": {
+      "description": "The tags associated with a profiling group.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "maxItems": 50,
+      "uniqueItems": true
     }
   },
   "additionalProperties": false,
@@ -105,12 +137,14 @@
         "sns:Publish",
         "codeguru-profiler:AddNotificationChannels",
         "codeguru-profiler:CreateProfilingGroup",
-        "codeguru-profiler:PutPermission"
+        "codeguru-profiler:PutPermission",
+        "codeguru-profiler:TagResource"
       ]
     },
     "read": {
       "permissions": [
-        "codeguru-profiler:DescribeProfilingGroup"
+        "codeguru-profiler:DescribeProfilingGroup",
+        "codeguru-profiler:ListTagsForResource"
       ]
     },
     "update": {
@@ -121,7 +155,10 @@
         "codeguru-profiler:RemoveNotificationChannel",
         "codeguru-profiler:PutPermission",
         "codeguru-profiler:RemovePermission",
-        "codeguru-profiler:GetPolicy"
+        "codeguru-profiler:GetPolicy",
+        "codeguru-profiler:TagResource",
+        "codeguru-profiler:UntagResource",
+        "codeguru-profiler:ListTagsForResource"
       ]
     },
     "delete": {
@@ -131,7 +168,8 @@
     },
     "list": {
       "permissions": [
-        "codeguru-profiler:ListProfilingGroups"
+        "codeguru-profiler:ListProfilingGroups",
+        "codeguru-profiler:ListTagsForResource"
       ]
     }
   }

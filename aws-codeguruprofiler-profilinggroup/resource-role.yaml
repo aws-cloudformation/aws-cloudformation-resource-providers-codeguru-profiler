@@ -30,9 +30,12 @@ Resources:
                 - "codeguru-profiler:GetNotificationConfiguration"
                 - "codeguru-profiler:GetPolicy"
                 - "codeguru-profiler:ListProfilingGroups"
+                - "codeguru-profiler:ListTagsForResource"
                 - "codeguru-profiler:PutPermission"
                 - "codeguru-profiler:RemoveNotificationChannel"
                 - "codeguru-profiler:RemovePermission"
+                - "codeguru-profiler:TagResource"
+                - "codeguru-profiler:UntagResource"
                 - "sns:Publish"
                 Resource: "*"
 Outputs:

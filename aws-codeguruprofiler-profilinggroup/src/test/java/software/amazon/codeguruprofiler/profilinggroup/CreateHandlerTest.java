@@ -41,7 +41,9 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -290,6 +292,37 @@ public class CreateHandlerTest {
                     }
                 }
             }
+        }
+    }
+
+    @Nested
+    class WhenTagsAreSet {
+        private String tagKey = "TestKey";
+        private String tagValue = "TestValue";
+
+        @BeforeEach
+        public void setup() {
+            doReturn(CreateProfilingGroupResponse.builder().build())
+                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+            ResourceModel model = ResourceModel.builder()
+                                      .profilingGroupName(profilingGroupName)
+                                      .tags(Arrays.asList(Tag.builder().key(tagKey).value(tagValue).build()))
+                                      .build();
+            request = makeRequest(model);
+        }
+
+        @Test
+        public void itCallsCreatePGWithTags() {
+            subject.handleRequest(proxy, request, null, logger);
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(
+                eq(CreateProfilingGroupRequest.builder()
+                       .profilingGroupName(profilingGroupName)
+                       .clientToken(clientToken)
+                       .tags(new HashMap<String, String>() {{ put(tagKey, tagValue); }})
+                       .build()
+                ),
+                any());
+            verifyNoMoreInteractions(proxy);
         }
     }
 

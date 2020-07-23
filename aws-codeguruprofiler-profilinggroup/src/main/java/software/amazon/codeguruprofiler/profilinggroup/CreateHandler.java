@@ -1,6 +1,7 @@
 package software.amazon.codeguruprofiler.profilinggroup;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
 import static software.amazon.awssdk.services.codeguruprofiler.model.ActionGroup.AGENT_PERMISSIONS;
 import static software.amazon.codeguruprofiler.profilinggroup.NotificationChannelHelper.addChannelNotifications;
 import static software.amazon.codeguruprofiler.profilinggroup.NotificationChannelHelper.anomalyDetectionNotificationConfiguration;
@@ -44,7 +45,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         final String awsAccountId = request.getAwsAccountId();
         final ResourceModel model = request.getDesiredResourceState();
         final String pgName = model.getProfilingGroupName();
-        final Optional<Map<String, String>> tags = tagsFromModel(model);
+        final Map<String, String> tags = tagsFromModel(model);
         final String computePlatform = model.getComputePlatform();
 
         final CreateProfilingGroupRequest createProfilingGroupRequest =
@@ -59,10 +60,10 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             proxy.injectCredentialsAndInvokeV2(createProfilingGroupRequest, profilerClient::createProfilingGroup);
         });
 
-        if (tags.isPresent()) {
-            logger.log(format("%s [%s] for accountId [%s] with tags [%s] has been successfully created!", ResourceModel.TYPE_NAME, pgName, awsAccountId, tags.get()));
-        } else {
+        if (tags.isEmpty()) {
             logger.log(format("%s [%s] for accountId [%s] has been successfully created!", ResourceModel.TYPE_NAME, pgName, awsAccountId));
+        } else {
+            logger.log(format("%s [%s] for accountId [%s] with tags [%s] has been successfully created!", ResourceModel.TYPE_NAME, pgName, awsAccountId, tags));
         }
 
         Optional<List<String>> principals = principalsForAgentPermissionsFrom(model);
@@ -161,29 +162,29 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         final String pgName,
         final String computePlatform,
         final String requestToken,
-        final Optional<Map<String, String>> tags
+        final Map<String, String> tags
     ) {
-        if (tags.isPresent()) {
+        if (tags.isEmpty()) {
             return CreateProfilingGroupRequest.builder()
                        .profilingGroupName(pgName)
                        .computePlatform(computePlatform)
                        .clientToken(requestToken)
-                       .tags(tags.get())
                        .build();
         }
         return CreateProfilingGroupRequest.builder()
                    .profilingGroupName(pgName)
                    .computePlatform(computePlatform)
                    .clientToken(requestToken)
+                   .tags(tags)
                    .build();
     }
 
-    private static Optional<Map<String, String>> tagsFromModel(final ResourceModel model) {
+    private static Map<String, String> tagsFromModel(final ResourceModel model) {
         List<Tag> tags = model.getTags();
         if (tags == null || tags.isEmpty()) {
-            return Optional.empty();
+            return emptyMap();
         }
 
-        return Optional.of(tags.stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue)));
+        return tags.stream().collect(Collectors.toMap(Tag::getKey, Tag::getValue));
     }
 }

@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.emptySet;
 
-public class TagUtils {
+public class TagHelper {
     private static final CodeGuruProfilerClient profilerClient = CodeGuruProfilerClientBuilder.create();
 
     public static Set<Tag> convertTagMapIntoSet(Map<String, String> tags) {

@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 
-public class TagUtilsTest {
+public class TagHelperTest {
     @Mock
     private AmazonWebServicesClientProxy proxy = mock(AmazonWebServicesClientProxy.class);
 
@@ -71,7 +71,7 @@ public class TagUtilsTest {
     class DescribeConvertTagMapIntoSet {
         @Test
         public void itConvertsSuccessfully() {
-            Set<Tag> result = TagUtils.convertTagMapIntoSet(oldTagsMap);
+            Set<Tag> result = TagHelper.convertTagMapIntoSet(oldTagsMap);
 
             assertThat(result).containsExactlyInAnyOrder(
                 Tag.builder().key(oldKeyToBeKept).value(oldTagValue).build(),
@@ -88,7 +88,7 @@ public class TagUtilsTest {
             private final ResourceModel desiredModel = ResourceModel.builder()
                                                            .profilingGroupName(profilingGroupName)
                                                            .arn(groupArn)
-                                                           .tags(new ArrayList<>(TagUtils.convertTagMapIntoSet(oldTagsMap)))
+                                                           .tags(new ArrayList<>(TagHelper.convertTagMapIntoSet(oldTagsMap)))
                                                            .build();
 
             @BeforeEach
@@ -99,7 +99,7 @@ public class TagUtilsTest {
 
             @Test
             public void itOnlyCallsListTags() {
-                TagUtils.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger);
+                TagHelper.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger);
 
                 verify(proxy, times(1))
                     .injectCredentialsAndInvokeV2(eq(ListTagsForResourceRequest.builder().resourceArn(groupArn).build()), any());
@@ -121,7 +121,7 @@ public class TagUtilsTest {
 
                 @Test
                 public void itOnlyCallsListTags() {
-                    TagUtils.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger);
+                    TagHelper.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger);
 
                     verify(proxy, times(1))
                         .injectCredentialsAndInvokeV2(eq(ListTagsForResourceRequest.builder().resourceArn(groupArn).build()), any());
@@ -135,7 +135,7 @@ public class TagUtilsTest {
             private final ResourceModel desiredModel = ResourceModel.builder()
                                                            .profilingGroupName(profilingGroupName)
                                                            .arn(groupArn)
-                                                           .tags(new ArrayList<>(TagUtils.convertTagMapIntoSet(newTagsMap)))
+                                                           .tags(new ArrayList<>(TagHelper.convertTagMapIntoSet(newTagsMap)))
                                                            .build();
 
             @BeforeEach
@@ -146,7 +146,7 @@ public class TagUtilsTest {
 
             @Test
             public void itCallsListTagsTagAndUntagResource() {
-                TagUtils.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger);
+                TagHelper.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger);
 
                 verify(proxy, times(1))
                     .injectCredentialsAndInvokeV2(eq(ListTagsForResourceRequest.builder().resourceArn(groupArn).build()), any());
@@ -182,7 +182,7 @@ public class TagUtilsTest {
 
                 @Test
                 public void itCallsListTagsAndUntagResource() {
-                    TagUtils.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger);
+                    TagHelper.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger);
 
                     verify(proxy, times(1))
                         .injectCredentialsAndInvokeV2(eq(ListTagsForResourceRequest.builder().resourceArn(groupArn).build()), any());
@@ -211,7 +211,7 @@ public class TagUtilsTest {
 
                 @Test
                 public void itOnlyCallsListTagsAndStopAfterUntag() {
-                    assertThrows(CodeGuruProfilerException.class, () -> TagUtils.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger));
+                    assertThrows(CodeGuruProfilerException.class, () -> TagHelper.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger));
 
                     verify(proxy, times(1))
                         .injectCredentialsAndInvokeV2(eq(ListTagsForResourceRequest.builder().resourceArn(groupArn).build()), any());
@@ -239,7 +239,7 @@ public class TagUtilsTest {
 
                 @Test
                 public void itAddsBackRemovedTags() {
-                    assertThrows(CodeGuruProfilerException.class, () -> TagUtils.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger));
+                    assertThrows(CodeGuruProfilerException.class, () -> TagHelper.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger));
 
                     verify(proxy, times(1))
                         .injectCredentialsAndInvokeV2(eq(ListTagsForResourceRequest.builder().resourceArn(groupArn).build()), any());
@@ -292,7 +292,7 @@ public class TagUtilsTest {
 
                     @Test
                     public void itDoesNotNeedToAddBackAnyTags() {
-                        assertThrows(CodeGuruProfilerException.class, () -> TagUtils.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger));
+                        assertThrows(CodeGuruProfilerException.class, () -> TagHelper.updateTags(proxy, desiredModel, awsAccountId, groupArn, logger));
 
                         verify(proxy, times(1))
                             .injectCredentialsAndInvokeV2(eq(ListTagsForResourceRequest.builder().resourceArn(groupArn).build()), any());

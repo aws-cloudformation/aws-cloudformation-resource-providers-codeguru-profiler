@@ -12,6 +12,12 @@ public class RequestBuilder {
     }
 
     static ResourceHandlerRequest<ResourceModel> makeRequest(ResourceModel model) {
-        return ResourceHandlerRequest.<ResourceModel>builder().desiredResourceState(model).clientRequestToken("clientTokenXXX").awsAccountId("111111111111").build();
+        return ResourceHandlerRequest.<ResourceModel>builder()
+                   .desiredResourceState(model)
+                   .clientRequestToken("clientTokenXXX")
+                   .awsAccountId("111111111111")
+                   .awsPartition("aws")
+                   .region("us-east-1")
+                   .build();
     }
 }

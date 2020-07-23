@@ -75,6 +75,10 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>codeguruprofiler</artifactId>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>arns</artifactId>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>

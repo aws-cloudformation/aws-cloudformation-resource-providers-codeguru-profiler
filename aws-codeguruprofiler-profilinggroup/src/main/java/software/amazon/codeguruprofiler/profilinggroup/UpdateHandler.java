@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import software.amazon.awssdk.arns.Arn;
 import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
 import software.amazon.awssdk.services.codeguruprofiler.model.ActionGroup;
 import software.amazon.awssdk.services.codeguruprofiler.model.Channel;
@@ -40,7 +41,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
 
     public UpdateHandler() {
         super();
-        updateTagFunction = TagUtils::updateTags;
+        updateTagFunction = TagHelper::updateTags;
     }
 
     public UpdateHandler(UpdateTagsFunction<AmazonWebServicesClientProxy, ResourceModel, String, String, Logger> updateTag) {
@@ -63,7 +64,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
 
         final String awsAccountId = request.getAwsAccountId();
         final String profilingGroupName = model.getProfilingGroupName();
-        final String profilingGroupArn = model.getArn();
+        final String profilingGroupArn = getResourceArnFrom(request);
 
         Optional<List<String>> principals = principalsForAgentPermissionsFrom(model);
 
@@ -198,5 +199,23 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
             return Optional.empty();
         }
         return Optional.of(model.getAgentPermissions().getPrincipals());
+    }
+
+    private static String getResourceArnFrom(final ResourceHandlerRequest<ResourceModel> request) {
+        ResourceModel model = request.getDesiredResourceState();
+        if (model.getArn() == null) {
+            return Arn.builder()
+                       // FIXME: Figure out why request.getAwsPartition() always returns null
+                       //  As we only support aws partition now, it is fine to hardcode the partition
+                       .partition("aws")
+                       .accountId(request.getAwsAccountId())
+                       .region(request.getRegion())
+                       .service("codeguru-profiler")
+                       .resource("profilingGroup/" + model.getProfilingGroupName())
+                       .build()
+                       .toString();
+        }
+
+        return model.getArn();
     }
 }

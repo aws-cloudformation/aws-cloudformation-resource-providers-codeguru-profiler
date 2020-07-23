@@ -406,11 +406,42 @@ public class UpdateHandlerTest {
         }
 
         @Test
-        public void itCallsUpdateTagsWithCorrectParameters() {
+        public void itUpdatesTagsWithCorrectParameters() {
             subject.handleRequest(proxy, request, null, logger);
 
             verify(updateTagFunction, times(1))
                 .apply(proxy, desiredModel, request.getAwsAccountId(), groupArn, logger );
+        }
+
+        @Nested
+        class WhenArnIsNotProvided {
+            private ResourceModel desiredModel = ResourceModel.builder()
+                                                     .profilingGroupName(profilingGroupName)
+                                                     .tags(newTags)
+                                                     .build();
+
+            @BeforeEach
+            public void setup() {
+                request = makeRequest(desiredModel);
+            }
+
+            @Test
+            public void itGeneratesArnAndUpdatesTagsWithCorrectParameters() {
+                subject.handleRequest(proxy, request, null, logger);
+
+                verify(updateTagFunction, times(1))
+                    .apply(proxy,
+                        desiredModel,
+                        request.getAwsAccountId(),
+                        String.join(":",
+                            "arn",
+                            request.getAwsPartition(),
+                            "codeguru-profiler",
+                            request.getRegion(),
+                            request.getAwsAccountId(),
+                            "profilingGroup/" + profilingGroupName)
+                        ,logger);
+            }
         }
     }
 

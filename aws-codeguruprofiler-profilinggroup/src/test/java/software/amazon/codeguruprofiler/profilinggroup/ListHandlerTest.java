@@ -78,7 +78,7 @@ public class ListHandlerTest {
         final ResourceModel expectedModel = ResourceModel.builder()
                 .profilingGroupName(profilingGroupDescription.name())
                 .arn(profilingGroupDescription.arn())
-                .tags(new ArrayList<>(TagUtils.convertTagMapIntoSet(profilingGroupDescription.tags())))
+                .tags(new ArrayList<>(TagHelper.convertTagMapIntoSet(profilingGroupDescription.tags())))
                 .build();
 
         assertThat(response).isNotNull();

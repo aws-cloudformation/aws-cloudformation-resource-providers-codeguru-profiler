@@ -18,7 +18,7 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 import java.util.ArrayList;
 
-import static software.amazon.codeguruprofiler.profilinggroup.TagUtils.convertTagMapIntoSet;
+import static software.amazon.codeguruprofiler.profilinggroup.TagHelper.convertTagMapIntoSet;
 
 public class ReadHandler extends BaseHandler<CallbackContext> {
 

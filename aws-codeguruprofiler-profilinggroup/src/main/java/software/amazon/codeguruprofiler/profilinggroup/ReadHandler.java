@@ -42,6 +42,7 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
             DescribeProfilingGroupResponse response = proxy.injectCredentialsAndInvokeV2(describeProfilingGroupRequest, profilerClient::describeProfilingGroup);
             model.setProfilingGroupName(response.profilingGroup().name()); // This is not needed but making sure the response is the same as the request!
             model.setArn(response.profilingGroup().arn());
+            model.setComputePlatform(response.profilingGroup().computePlatformAsString());
             model.setTags(new ArrayList<>(convertTagMapIntoSet(response.profilingGroup().tags())));
 
             logger.log(String.format("%s [%s] for accountId [%s] has been successfully read!", ResourceModel.TYPE_NAME, model.getProfilingGroupName(), awsAccountId));

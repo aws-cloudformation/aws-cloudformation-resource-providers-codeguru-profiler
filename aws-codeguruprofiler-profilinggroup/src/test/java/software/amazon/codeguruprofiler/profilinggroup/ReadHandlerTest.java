@@ -61,6 +61,7 @@ public class ReadHandlerTest {
                 .profilingGroup(ProfilingGroupDescription.builder()
                         .name("IronMan-Suit-34")
                         .arn(arn)
+                        .computePlatform("Default")
                         .tags(new HashMap<String, String>() {{ put("superhero", "blackWidow"); }})
                         .build())
                 .build())
@@ -79,6 +80,7 @@ public class ReadHandlerTest {
         assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
         assertThat(response.getResourceModel()).isEqualTo(request.getDesiredResourceState());
         assertThat(response.getResourceModel().getArn()).isEqualTo(arn);
+        assertThat(response.getResourceModel().getComputePlatform()).isEqualTo("Default");
         assertThat(response.getResourceModel().getTags()).containsOnly(Tag.builder().key("superhero").value("blackWidow").build());
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();

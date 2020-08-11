@@ -54,6 +54,7 @@ public class ListHandlerTest {
         final String arn = "arn:aws:codeguru-profiler:us-east-1:000000000000:profilingGroup/IronMan-Suit-34";
         final ProfilingGroupDescription profilingGroupDescription = ProfilingGroupDescription.builder()
                         .name("IronMan-Suit-34")
+                        .computePlatform("Default")
                         .arn(arn)
                         .tags(new HashMap<String, String>() {{ put("superhero", "blackWidow"); }})
                         .build();
@@ -77,6 +78,7 @@ public class ListHandlerTest {
 
         final ResourceModel expectedModel = ResourceModel.builder()
                 .profilingGroupName(profilingGroupDescription.name())
+                .computePlatform("Default")
                 .arn(profilingGroupDescription.arn())
                 .tags(new ArrayList<>(TagHelper.convertTagMapIntoSet(profilingGroupDescription.tags())))
                 .build();

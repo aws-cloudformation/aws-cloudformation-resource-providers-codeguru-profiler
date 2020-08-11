@@ -44,6 +44,7 @@ public class ListHandler extends BaseHandler<CallbackContext> {
             response.profilingGroups().forEach(pg ->
                     models.add(ResourceModel.builder()
                             .profilingGroupName(pg.name())
+                            .computePlatform(pg.computePlatformAsString())
                             .tags(new ArrayList<>(convertTagMapIntoSet(pg.tags())))
                             .arn(pg.arn()).build())
             );

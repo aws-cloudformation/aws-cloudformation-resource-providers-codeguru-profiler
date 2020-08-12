@@ -6,9 +6,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.services.codeguruprofiler.model.Channel;
 import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupResponse;
+import software.amazon.awssdk.services.codeguruprofiler.model.GetNotificationConfigurationRequest;
+import software.amazon.awssdk.services.codeguruprofiler.model.GetNotificationConfigurationResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
+import software.amazon.awssdk.services.codeguruprofiler.model.NotificationConfiguration;
 import software.amazon.awssdk.services.codeguruprofiler.model.ProfilingGroupDescription;
 import software.amazon.awssdk.services.codeguruprofiler.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ThrottlingException;
@@ -28,6 +32,7 @@ import java.util.HashMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -56,6 +61,7 @@ public class ReadHandlerTest {
     @Test
     public void testSuccessState() {
         final String arn = "arn:aws:codeguru-profiler:us-east-1:000000000000:profilingGroup/IronMan-Suit-34";
+        final Channel testChannel = Channel.builder().id("channelId").uri("channelUri").build();
 
         doReturn(DescribeProfilingGroupResponse.builder()
                 .profilingGroup(ProfilingGroupDescription.builder()
@@ -66,10 +72,21 @@ public class ReadHandlerTest {
                         .build())
                 .build())
                 .when(proxy).injectCredentialsAndInvokeV2(
-                    ArgumentMatchers.eq(DescribeProfilingGroupRequest
+                    eq(DescribeProfilingGroupRequest
                         .builder()
                         .profilingGroupName("IronMan-Suit-34")
                         .build()), any());
+
+        doReturn(
+            GetNotificationConfigurationResponse.builder()
+                .notificationConfiguration(NotificationConfiguration.builder().channels(testChannel).build())
+                .build()
+        )
+            .when(proxy).injectCredentialsAndInvokeV2(
+                eq(GetNotificationConfigurationRequest
+                       .builder()
+                       .profilingGroupName("IronMan-Suit-34")
+                       .build()), any());
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = new ReadHandler().handleRequest(proxy, request, null, logger);
@@ -81,6 +98,9 @@ public class ReadHandlerTest {
         assertThat(response.getResourceModel()).isEqualTo(request.getDesiredResourceState());
         assertThat(response.getResourceModel().getArn()).isEqualTo(arn);
         assertThat(response.getResourceModel().getComputePlatform()).isEqualTo("Default");
+        assertThat(response.getResourceModel().getAnomalyDetectionNotificationConfiguration()).hasSize(1);
+        assertThat(response.getResourceModel().getAnomalyDetectionNotificationConfiguration().get(0).getChannelId()).isEqualTo(testChannel.id());
+        assertThat(response.getResourceModel().getAnomalyDetectionNotificationConfiguration().get(0).getChannelUri()).isEqualTo(testChannel.uri());
         assertThat(response.getResourceModel().getTags()).containsOnly(Tag.builder().key("superhero").value("blackWidow").build());
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();

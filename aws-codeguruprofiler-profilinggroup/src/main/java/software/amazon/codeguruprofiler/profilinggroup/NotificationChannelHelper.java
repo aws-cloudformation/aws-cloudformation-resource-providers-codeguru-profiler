@@ -10,6 +10,9 @@ import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
 import software.amazon.awssdk.services.codeguruprofiler.model.AddNotificationChannelsRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.Channel;
 import software.amazon.awssdk.services.codeguruprofiler.model.EventPublisher;
+import software.amazon.awssdk.services.codeguruprofiler.model.GetNotificationConfigurationRequest;
+import software.amazon.awssdk.services.codeguruprofiler.model.GetNotificationConfigurationResponse;
+import software.amazon.awssdk.services.codeguruprofiler.model.NotificationConfiguration;
 import software.amazon.awssdk.services.codeguruprofiler.model.RemoveNotificationChannelRequest;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 
@@ -45,6 +48,21 @@ public class NotificationChannelHelper {
                 .profilingGroupName(pgName)
                 .build();
         proxy.injectCredentialsAndInvokeV2(removeNotificationChannelRequest, profilerClient::removeNotificationChannel);
+    }
+
+    public static GetNotificationConfigurationResponse getNotificationChannel(final String pgName, final AmazonWebServicesClientProxy proxy, CodeGuruProfilerClient profilerClient) {
+        GetNotificationConfigurationRequest getNotificationConfigurationRequest =
+            GetNotificationConfigurationRequest.builder().profilingGroupName(pgName).build();
+
+        return proxy.injectCredentialsAndInvokeV2(getNotificationConfigurationRequest, profilerClient::getNotificationConfiguration);
+    }
+
+    public static List<software.amazon.codeguruprofiler.profilinggroup.Channel> convertNotificationConfigurationIntoChannelsList(final NotificationConfiguration configuration) {
+        return configuration
+            .channels()
+            .stream()
+            .map(s -> software.amazon.codeguruprofiler.profilinggroup.Channel.builder().channelId(s.id()).channelUri(s.uri()).build())
+            .collect(Collectors.toList());
     }
 
     // Since we don't have a PUT operation, this emulates a channel update, when the updated channel contains a new Id

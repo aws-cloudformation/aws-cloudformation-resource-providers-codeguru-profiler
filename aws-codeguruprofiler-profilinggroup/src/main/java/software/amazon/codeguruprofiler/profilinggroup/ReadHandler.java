@@ -4,6 +4,7 @@ import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
 import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
+import software.amazon.awssdk.services.codeguruprofiler.model.NotificationConfiguration;
 import software.amazon.awssdk.services.codeguruprofiler.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ThrottlingException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ValidationException;
@@ -17,7 +18,10 @@ import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
+import static software.amazon.codeguruprofiler.profilinggroup.NotificationChannelHelper.convertNotificationConfigurationIntoChannelsList;
+import static software.amazon.codeguruprofiler.profilinggroup.NotificationChannelHelper.getNotificationChannel;
 import static software.amazon.codeguruprofiler.profilinggroup.TagHelper.convertTagMapIntoSet;
 
 public class ReadHandler extends BaseHandler<CallbackContext> {
@@ -35,8 +39,9 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
         final String awsAccountId = request.getAwsAccountId();
 
         try {
+            String pgName = model.getProfilingGroupName();
             DescribeProfilingGroupRequest describeProfilingGroupRequest = DescribeProfilingGroupRequest.builder()
-                    .profilingGroupName(model.getProfilingGroupName())
+                    .profilingGroupName(pgName)
                     .build();
 
             DescribeProfilingGroupResponse response = proxy.injectCredentialsAndInvokeV2(describeProfilingGroupRequest, profilerClient::describeProfilingGroup);
@@ -44,6 +49,9 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
             model.setArn(response.profilingGroup().arn());
             model.setComputePlatform(response.profilingGroup().computePlatformAsString());
             model.setTags(new ArrayList<>(convertTagMapIntoSet(response.profilingGroup().tags())));
+
+            NotificationConfiguration notificationConfiguration = getNotificationChannel(pgName, proxy, profilerClient).notificationConfiguration();
+            model.setAnomalyDetectionNotificationConfiguration(convertNotificationConfigurationIntoChannelsList(notificationConfiguration));
 
             logger.log(String.format("%s [%s] for accountId [%s] has been successfully read!", ResourceModel.TYPE_NAME, model.getProfilingGroupName(), awsAccountId));
 

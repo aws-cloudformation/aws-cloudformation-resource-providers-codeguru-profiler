@@ -3,7 +3,6 @@ package software.amazon.codeguruprofiler.profilinggroup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.codeguruprofiler.model.Channel;
@@ -26,9 +25,12 @@ import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+import software.amazon.codeguruprofiler.profilinggroup.AgentPermissionHelper.GetPrincipalsFunction;
 
 import java.util.HashMap;
+import java.util.List;
 
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,19 +45,24 @@ import static software.amazon.codeguruprofiler.profilinggroup.RequestBuilder.mak
 public class ReadHandlerTest {
 
     @Mock
-    private AmazonWebServicesClientProxy proxy;
+    private final AmazonWebServicesClientProxy proxy = mock(AmazonWebServicesClientProxy.class);
 
     @Mock
-    private Logger logger;
+    private final Logger logger = mock(Logger.class);
 
-    private ResourceHandlerRequest<ResourceModel> request;
+    private final ResourceHandlerRequest<ResourceModel> request = makeValidRequest();
+
+    @SuppressWarnings("unchecked")
+    private final GetPrincipalsFunction<AmazonWebServicesClientProxy, String, List<String>> getPrincipalsFunction = mock(GetPrincipalsFunction.class);
+
+    private final ReadHandler subject = new ReadHandler(getPrincipalsFunction);
+
+    private final String testPrincipalArn = "arn:aws:iam:012345678901:user/User";
+
 
     @BeforeEach
     public void setup() {
-        proxy = mock(AmazonWebServicesClientProxy.class);
-        logger = mock(Logger.class);
-
-        request = makeValidRequest();
+        doReturn(singletonList(testPrincipalArn)).when(getPrincipalsFunction).apply(eq(proxy), any());
     }
 
     @Test
@@ -88,8 +95,7 @@ public class ReadHandlerTest {
                        .profilingGroupName("IronMan-Suit-34")
                        .build()), any());
 
-        final ProgressEvent<ResourceModel, CallbackContext> response
-                = new ReadHandler().handleRequest(proxy, request, null, logger);
+        final ProgressEvent<ResourceModel, CallbackContext> response = subject.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -102,6 +108,7 @@ public class ReadHandlerTest {
         assertThat(response.getResourceModel().getAnomalyDetectionNotificationConfiguration().get(0).getChannelId()).isEqualTo(testChannel.id());
         assertThat(response.getResourceModel().getAnomalyDetectionNotificationConfiguration().get(0).getChannelUri()).isEqualTo(testChannel.uri());
         assertThat(response.getResourceModel().getTags()).containsOnly(Tag.builder().key("superhero").value("blackWidow").build());
+        assertThat(response.getResourceModel().getAgentPermissions().getPrincipals()).containsExactly(testPrincipalArn);
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
     }
@@ -111,8 +118,7 @@ public class ReadHandlerTest {
         doThrow(ResourceNotFoundException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
-        assertThrows(CfnNotFoundException.class, () ->
-                new ReadHandler().handleRequest(proxy, request, null, logger));
+        assertThrows(CfnNotFoundException.class, () -> subject.handleRequest(proxy, request, null, logger));
     }
 
     @Test
@@ -120,8 +126,7 @@ public class ReadHandlerTest {
         doThrow(InternalServerException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
-        assertThrows(CfnServiceInternalErrorException.class, () ->
-                new ReadHandler().handleRequest(proxy, request, null, logger));
+        assertThrows(CfnServiceInternalErrorException.class, () -> subject.handleRequest(proxy, request, null, logger));
     }
 
     @Test
@@ -129,8 +134,7 @@ public class ReadHandlerTest {
         doThrow(ThrottlingException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
-        assertThrows(CfnThrottlingException.class, () ->
-                new ReadHandler().handleRequest(proxy, request, null, logger));
+        assertThrows(CfnThrottlingException.class, () -> subject.handleRequest(proxy, request, null, logger));
     }
 
     @Test
@@ -138,7 +142,6 @@ public class ReadHandlerTest {
         doThrow(ValidationException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
-        assertThrows(CfnInvalidRequestException.class, () ->
-                new ReadHandler().handleRequest(proxy, makeInvalidRequest(), null, logger));
+        assertThrows(CfnInvalidRequestException.class, () -> subject.handleRequest(proxy, makeInvalidRequest(), null, logger));
     }
 }

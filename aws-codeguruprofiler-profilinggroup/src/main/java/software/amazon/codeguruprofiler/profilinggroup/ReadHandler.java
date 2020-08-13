@@ -16,9 +16,10 @@ import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+import software.amazon.codeguruprofiler.profilinggroup.AgentPermissionHelper.GetPrincipalsFunction;
 
 import java.util.ArrayList;
-import java.util.stream.Collectors;
+import java.util.List;
 
 import static software.amazon.codeguruprofiler.profilinggroup.NotificationChannelHelper.convertNotificationConfigurationIntoChannelsList;
 import static software.amazon.codeguruprofiler.profilinggroup.NotificationChannelHelper.getNotificationChannel;
@@ -27,6 +28,18 @@ import static software.amazon.codeguruprofiler.profilinggroup.TagHelper.convertT
 public class ReadHandler extends BaseHandler<CallbackContext> {
 
     private final CodeGuruProfilerClient profilerClient = CodeGuruProfilerClientBuilder.create();
+
+    private final GetPrincipalsFunction<AmazonWebServicesClientProxy, String, List<String>> getPrincipalsFunction;
+
+    public ReadHandler() {
+        super();
+        getPrincipalsFunction = AgentPermissionHelper::getPrincipalsFromPolicy;
+    }
+
+    public ReadHandler(GetPrincipalsFunction<AmazonWebServicesClientProxy, String, List<String>> getPrincipals) {
+        super();
+        getPrincipalsFunction = getPrincipals;
+    }
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
@@ -52,6 +65,8 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
 
             NotificationConfiguration notificationConfiguration = getNotificationChannel(pgName, proxy, profilerClient).notificationConfiguration();
             model.setAnomalyDetectionNotificationConfiguration(convertNotificationConfigurationIntoChannelsList(notificationConfiguration));
+
+            model.setAgentPermissions(AgentPermissions.builder().principals(getPrincipalsFunction.apply(proxy, pgName)).build());
 
             logger.log(String.format("%s [%s] for accountId [%s] has been successfully read!", ResourceModel.TYPE_NAME, model.getProfilingGroupName(), awsAccountId));
 

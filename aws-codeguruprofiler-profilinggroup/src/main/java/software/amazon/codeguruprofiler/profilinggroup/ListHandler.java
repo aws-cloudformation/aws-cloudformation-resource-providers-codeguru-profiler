@@ -13,6 +13,8 @@ import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
+import software.amazon.codeguruprofiler.profilinggroup.AgentPermissionHelper.GetPrincipalsFunction;
+import software.amazon.codeguruprofiler.profilinggroup.ResourceModel.ResourceModelBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +26,18 @@ import static software.amazon.codeguruprofiler.profilinggroup.TagHelper.convertT
 public class ListHandler extends BaseHandler<CallbackContext> {
 
     private final CodeGuruProfilerClient profilerClient = CodeGuruProfilerClientBuilder.create();
+
+    private final GetPrincipalsFunction<AmazonWebServicesClientProxy, String, List<String>> getPrincipalsFunction;
+
+    public ListHandler() {
+        super();
+        getPrincipalsFunction = AgentPermissionHelper::getPrincipalsFromPolicy;
+    }
+
+    public ListHandler(GetPrincipalsFunction<AmazonWebServicesClientProxy, String, List<String>> getPrincipals) {
+        super();
+        getPrincipalsFunction = getPrincipals;
+    }
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
@@ -53,7 +67,9 @@ public class ListHandler extends BaseHandler<CallbackContext> {
                         .tags(new ArrayList<>(convertTagMapIntoSet(pg.tags())))
                         .anomalyDetectionNotificationConfiguration(convertNotificationConfigurationIntoChannelsList(notificationConfiguration))
                         .arn(pg.arn())
-                        .build());
+                        .agentPermissions(AgentPermissions.builder().principals(getPrincipalsFunction.apply(proxy, pg.name())).build())
+                        .build()
+                );
             });
 
             logger.log(String.format("%d \"%s\" for accountId [%s] has been successfully listed for token %s!", models.size(), ResourceModel.TYPE_NAME, awsAccountId, request.getNextToken()));

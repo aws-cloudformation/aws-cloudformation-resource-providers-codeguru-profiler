@@ -2,9 +2,9 @@ package software.amazon.codeguruprofiler.profilinggroup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
-import software.amazon.awssdk.services.codeguruprofiler.model.CodeGuruProfilerException;
 import software.amazon.awssdk.services.codeguruprofiler.model.GetPolicyRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.GetPolicyResponse;
+import software.amazon.cloudformation.exceptions.CfnInternalFailureException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 
 import java.util.List;
@@ -28,9 +28,10 @@ public class AgentPermissionHelper {
         GetPolicyResponse getPolicyResponse = proxy.injectCredentialsAndInvokeV2(getPolicyRequest, profilerClient::getPolicy);
         String policyInJson = getPolicyResponse.policy();
 
-        if (policyInJson == null) return emptyList();
+        if (policyInJson == null || policyInJson.isEmpty()) return emptyList();
 
         try {
+            // An example policy returned from the response can be found in [AgentPermissionHelperTest]
             Map<String, List<Map<String, Map<String, Object>>>> policyMap = objectMapper.readValue(policyInJson, Map.class);
             Object principals = policyMap.get("Statement").get(0).get("Principal").get("AWS");
 
@@ -40,7 +41,7 @@ public class AgentPermissionHelper {
                 return (List<String>) principals;
             }
         } catch (Exception e) {
-            throw CodeGuruProfilerException.create("Failed to deserialize policy: " + policyInJson, e);
+            throw new CfnInternalFailureException(e);
         }
     }
 }

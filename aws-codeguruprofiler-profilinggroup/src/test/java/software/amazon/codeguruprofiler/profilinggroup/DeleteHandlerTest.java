@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.codeguruprofiler.model.DeleteProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.DeleteProfilingGroupResponse;
+import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ThrottlingException;
@@ -17,6 +18,7 @@ import software.amazon.cloudformation.exceptions.CfnNotFoundException;
 import software.amazon.cloudformation.exceptions.CfnServiceInternalErrorException;
 import software.amazon.cloudformation.exceptions.CfnThrottlingException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -66,7 +68,7 @@ public class DeleteHandlerTest {
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
         assertThat(response.getCallbackContext()).isNull();
         assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
-        assertThat(response.getResourceModel()).isEqualTo(request.getDesiredResourceState());
+        assertThat(response.getResourceModel()).isNull();
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
     }
@@ -76,8 +78,11 @@ public class DeleteHandlerTest {
         doThrow(ResourceNotFoundException.builder().build())
                 .when(proxy).injectCredentialsAndInvokeV2(any(), any());
 
-        assertThrows(CfnNotFoundException.class, () ->
-                new DeleteHandler().handleRequest(proxy, request, null, logger));
+        final ProgressEvent<ResourceModel, CallbackContext> response
+                = new DeleteHandler().handleRequest(proxy, request, null, logger);
+
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
+        assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.NotFound);
     }
 
     @Test
@@ -107,3 +112,4 @@ public class DeleteHandlerTest {
                 new DeleteHandler().handleRequest(proxy, makeInvalidRequest(), null, logger));
     }
 }
+

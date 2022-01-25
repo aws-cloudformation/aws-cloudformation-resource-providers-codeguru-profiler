@@ -11,6 +11,7 @@ import software.amazon.cloudformation.exceptions.CfnNotFoundException;
 import software.amazon.cloudformation.exceptions.CfnServiceInternalErrorException;
 import software.amazon.cloudformation.exceptions.CfnThrottlingException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
@@ -39,10 +40,10 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
 
             logger.log(String.format("%s [%s] for accountId [%s] has been successfully deleted!", ResourceModel.TYPE_NAME, profilingGroupName, awsAccountId));
 
-            return ProgressEvent.defaultSuccessHandler(model);
-
+            // Delete handler should not return a model in case of success, according to https://w.amazon.com/bin/view/AWS21/Design/Uluru/ContractTests
+            return ProgressEvent.defaultSuccessHandler(null);
         } catch (ResourceNotFoundException e) {
-            throw new CfnNotFoundException(e);
+            return ProgressEvent.defaultFailureHandler(e, HandlerErrorCode.NotFound);
         } catch (InternalServerException e) {
             throw new CfnServiceInternalErrorException(e);
         } catch (ThrottlingException e) {

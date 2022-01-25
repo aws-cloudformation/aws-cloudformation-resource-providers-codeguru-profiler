@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.codeguruprofiler.CodeGuruProfilerClient;
 import software.amazon.awssdk.services.codeguruprofiler.model.ActionGroup;
 import software.amazon.awssdk.services.codeguruprofiler.model.Channel;
 import software.amazon.awssdk.services.codeguruprofiler.model.ConflictException;
+import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.EventPublisher;
 import software.amazon.awssdk.services.codeguruprofiler.model.GetNotificationConfigurationRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.GetNotificationConfigurationResponse;
@@ -30,7 +31,9 @@ import software.amazon.cloudformation.exceptions.CfnNotFoundException;
 import software.amazon.cloudformation.exceptions.CfnServiceInternalErrorException;
 import software.amazon.cloudformation.exceptions.CfnThrottlingException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
+import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
@@ -69,6 +72,10 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         Optional<List<String>> principals = principalsForAgentPermissionsFrom(model);
 
         try {
+            if (!profilingGroupExists(proxy, profilingGroupName)) {
+                return ProgressEvent.failed(null, null, HandlerErrorCode.NotFound, "Profiling group: " + profilingGroupName + " does not exist.");
+            }
+
             updateTagFunction.apply(proxy, model, awsAccountId, profilingGroupArn, logger);
 
             GetPolicyResponse getPolicyResponse = getExistingPolicy(proxy, profilingGroupName);
@@ -111,11 +118,23 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         } catch (InternalServerException e) {
             throw new CfnServiceInternalErrorException(e);
         } catch (ResourceNotFoundException e) {
-            throw new CfnNotFoundException(e);
+            return ProgressEvent.defaultFailureHandler(e, HandlerErrorCode.NotFound);
         } catch (ThrottlingException e) {
             throw new CfnThrottlingException(e);
         } catch (ValidationException e) {
             throw new CfnInvalidRequestException(ResourceModel.TYPE_NAME + e.getMessage(), e);
+        }
+    }
+
+    private boolean profilingGroupExists(AmazonWebServicesClientProxy proxy, String profilingGroupName) {
+        try {
+            proxy.injectCredentialsAndInvokeV2(
+                DescribeProfilingGroupRequest.builder().profilingGroupName(profilingGroupName).build(),
+                profilerClient::describeProfilingGroup
+            );
+            return true;
+        } catch (ResourceNotFoundException e) {
+            return false;
         }
     }
 
@@ -219,3 +238,4 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         return model.getArn();
     }
 }
+

@@ -40,7 +40,6 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
 
             logger.log(String.format("%s [%s] for accountId [%s] has been successfully deleted!", ResourceModel.TYPE_NAME, profilingGroupName, awsAccountId));
 
-            // Delete handler should not return a model in case of success, according to https://w.amazon.com/bin/view/AWS21/Design/Uluru/ContractTests
             return ProgressEvent.defaultSuccessHandler(null);
         } catch (ResourceNotFoundException e) {
             return ProgressEvent.defaultFailureHandler(e, HandlerErrorCode.NotFound);

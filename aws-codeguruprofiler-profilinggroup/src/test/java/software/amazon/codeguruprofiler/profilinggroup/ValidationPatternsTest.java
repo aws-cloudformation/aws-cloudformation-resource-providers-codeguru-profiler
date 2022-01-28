@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 // A few tests for the regular expressions included in the aws-codeguruprofiler-profilinggroup.json file
 //
-// All AWS Regions and their partitions: https://tiny.amazon.com/nvhuvr9j (Internal Amazon Link)
 public class ValidationPatternsTest {
     @Nested
     class DescribeProfilingGroupArnPattern {

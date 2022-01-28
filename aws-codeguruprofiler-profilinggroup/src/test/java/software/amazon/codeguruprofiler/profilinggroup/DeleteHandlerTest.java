@@ -112,4 +112,3 @@ public class DeleteHandlerTest {
                 new DeleteHandler().handleRequest(proxy, makeInvalidRequest(), null, logger));
     }
 }
-

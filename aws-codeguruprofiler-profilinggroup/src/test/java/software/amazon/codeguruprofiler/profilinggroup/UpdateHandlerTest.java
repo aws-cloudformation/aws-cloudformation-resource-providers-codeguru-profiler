@@ -516,4 +516,3 @@ public class UpdateHandlerTest {
         }
     }
 }
-

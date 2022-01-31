@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 // A few tests for the regular expressions included in the aws-codeguruprofiler-profilinggroup.json file
 //
-// All AWS Regions and their partitions: https://tiny.amazon.com/nvhuvr9j (Internal Amazon Link)
 public class ValidationPatternsTest {
     @Nested
     class DescribeProfilingGroupArnPattern {
@@ -40,11 +39,12 @@ public class ValidationPatternsTest {
     class DescribeIamArnPattern {
         // NOTE: This should be kept in sync with IamArn in aws-codeguruprofiler-profilinggroup.json
         // See https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html#identifiers-arns
-        private Pattern pattern = Pattern.compile("^arn:aws([-\\w]*):iam::([0-9]{12}):[^.]+$");
+        private Pattern pattern = Pattern.compile("^arn:aws([-\\w]*):iam::([0-9]{12}):[\\S]+$");
 
         @Test
         public void itAcceptsACorrectIamArn() {
             assertThat("arn:aws:iam::123456789012:group/division_abc/subdivision_xyz/product_A/Developers").matches(pattern);
+            assertThat("arn:aws:iam::123456789012:group/division_abc/subdivision_xyz/product_A/Dev+e=l,o.p@e-rs").matches(pattern);
         }
 
         @Test
@@ -58,6 +58,7 @@ public class ValidationPatternsTest {
         @Test
         public void itDoesNotAcceptSomethingOtherThanAIamArn() {
             assertThat("arn:aws:notiam::123456789012:group/division_abc/subdivision_xyz/product_A/Developers").doesNotMatch(pattern);
+            assertThat("arn:aws:iam::123456789012:group/division_abc/subdivision_xyz/product_A/Develop ers").doesNotMatch(pattern);
         }
     }
 

@@ -10,6 +10,8 @@ import software.amazon.awssdk.services.codeguruprofiler.model.ActionGroup;
 import software.amazon.awssdk.services.codeguruprofiler.model.AddNotificationChannelsRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.Channel;
 import software.amazon.awssdk.services.codeguruprofiler.model.ConflictException;
+import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupRequest;
+import software.amazon.awssdk.services.codeguruprofiler.model.DescribeProfilingGroupResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.EventPublisher;
 import software.amazon.awssdk.services.codeguruprofiler.model.GetNotificationConfigurationRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.GetNotificationConfigurationResponse;
@@ -31,6 +33,7 @@ import software.amazon.cloudformation.exceptions.CfnNotFoundException;
 import software.amazon.cloudformation.exceptions.CfnServiceInternalErrorException;
 import software.amazon.cloudformation.exceptions.CfnThrottlingException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -75,7 +78,16 @@ public class UpdateHandlerTest {
     private final GetPolicyRequest getPolicyRequest =
             GetPolicyRequest.builder().profilingGroupName(profilingGroupName).build();
 
+    final DescribeProfilingGroupRequest describePgRequest =
+        DescribeProfilingGroupRequest.builder().profilingGroupName(profilingGroupName).build();
+
     private final List<String> principals = Arrays.asList("arn:aws:iam::123456789012:role/UnitTestRole");
+
+    @BeforeEach
+    public void setup() {
+        // The handler uses a describe call to check if the profiling group exists, so we mock a successful response.
+        doReturn(DescribeProfilingGroupResponse.builder().build()).when(proxy).injectCredentialsAndInvokeV2(eq(describePgRequest), any());
+    }
 
     @Nested
     class WhenNotificationChannelConfigurationIsProvided {
@@ -137,6 +149,7 @@ public class UpdateHandlerTest {
 
             subject.handleRequest(proxy, request, null, logger);
 
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(describePgRequest), any()); // to check if pg exists
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(addChannel2Request), any());
@@ -168,6 +181,7 @@ public class UpdateHandlerTest {
 
             subject.handleRequest(proxy, request, null, logger);
 
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(describePgRequest), any()); // to check if pg exists
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeChannel1Request), any());
@@ -205,6 +219,7 @@ public class UpdateHandlerTest {
 
             subject.handleRequest(proxy, request, null, logger);
 
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(describePgRequest), any()); // to check if pg exists
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(removeChannel1Request), any());
@@ -244,6 +259,7 @@ public class UpdateHandlerTest {
 
             subject.handleRequest(proxy, request, null, logger);
 
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(describePgRequest), any()); // to check if pg exists
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getNotificationConfigurationRequest), any());
             verifyNoMoreInteractions(proxy);
@@ -276,6 +292,7 @@ public class UpdateHandlerTest {
         public void itOnlyCallsGetPolicy() {
             subject.handleRequest(proxy, request, null, logger);
 
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(describePgRequest), any()); // to check if pg exists
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verifyNoMoreInteractions(proxy);
         }
@@ -296,6 +313,7 @@ public class UpdateHandlerTest {
             public void itCallsGetPolicyAndRemovePermissions() {
                 subject.handleRequest(proxy, request, null, logger);
 
+                verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(describePgRequest), any()); // to check if pg exists
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(
                     eq(RemovePermissionRequest.builder().profilingGroupName(profilingGroupName)
@@ -349,6 +367,7 @@ public class UpdateHandlerTest {
         public void itCallsGetPolicyAndPutPermissions() {
             subject.handleRequest(proxy, request, null, logger);
 
+            verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(describePgRequest), any()); // to check if pg exists
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
             verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(putPermissionRequest), any());
             verifyNoMoreInteractions(proxy);
@@ -380,6 +399,7 @@ public class UpdateHandlerTest {
             public void itCallsGetPolicyAndPutPermission() {
                 subject.handleRequest(proxy, request, null, logger);
 
+                verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(describePgRequest), any()); // to check if pg exists
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(getPolicyRequest), any());
                 verify(proxy, times(1)).injectCredentialsAndInvokeV2(eq(putPermissionRequest), any());
                 verifyNoMoreInteractions(proxy);
@@ -461,11 +481,14 @@ public class UpdateHandlerTest {
         }
 
         @Test
-        public void itThrowsNotFoundException() {
+        public void itReturnsFailureNotFoundResponse() {
             doThrow(ResourceNotFoundException.builder().build())
-                .when(proxy).injectCredentialsAndInvokeV2(any(), any());
+                .when(proxy).injectCredentialsAndInvokeV2(any(DescribeProfilingGroupRequest.class), any());
 
-            assertThrows(CfnNotFoundException.class, () -> subject.handleRequest(proxy, request, null, logger));
+            final ProgressEvent<ResourceModel, CallbackContext> response = subject.handleRequest(proxy, request, null, logger);
+
+            assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
+            assertThat(response.getErrorCode()).isEqualTo(HandlerErrorCode.NotFound);
         }
 
         @Test

@@ -5,6 +5,7 @@ import software.amazon.awssdk.services.codeguruprofiler.model.InternalServerExce
 import software.amazon.awssdk.services.codeguruprofiler.model.ListProfilingGroupsRequest;
 import software.amazon.awssdk.services.codeguruprofiler.model.ListProfilingGroupsResponse;
 import software.amazon.awssdk.services.codeguruprofiler.model.NotificationConfiguration;
+import software.amazon.awssdk.services.codeguruprofiler.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.codeguruprofiler.model.ThrottlingException;
 import software.amazon.cloudformation.exceptions.CfnServiceInternalErrorException;
 import software.amazon.cloudformation.exceptions.CfnThrottlingException;
@@ -59,17 +60,23 @@ public class ListHandler extends BaseHandler<CallbackContext> {
             ListProfilingGroupsResponse response = proxy.injectCredentialsAndInvokeV2(listProfilingGroupsRequest, profilerClient::listProfilingGroups);
 
             response.profilingGroups().forEach(pg -> {
-                NotificationConfiguration notificationConfiguration = getNotificationChannel(pg.name(), proxy, profilerClient).notificationConfiguration();
-                models.add(
-                    ResourceModel.builder()
-                        .profilingGroupName(pg.name())
-                        .computePlatform(pg.computePlatformAsString())
-                        .tags(new ArrayList<>(convertTagMapIntoSet(pg.tags())))
-                        .anomalyDetectionNotificationConfiguration(convertNotificationConfigurationIntoChannelsList(notificationConfiguration))
-                        .arn(pg.arn())
-                        .agentPermissions(AgentPermissions.builder().principals(getPrincipalsFunction.apply(proxy, pg.name())).build())
-                        .build()
-                );
+                try {
+                    NotificationConfiguration notificationConfiguration = getNotificationChannel(pg.name(), proxy, profilerClient).notificationConfiguration();
+                    models.add(
+                        ResourceModel.builder()
+                            .profilingGroupName(pg.name())
+                            .computePlatform(pg.computePlatformAsString())
+                            .tags(new ArrayList<>(convertTagMapIntoSet(pg.tags())))
+                            .anomalyDetectionNotificationConfiguration(convertNotificationConfigurationIntoChannelsList(notificationConfiguration))
+                            .arn(pg.arn())
+                            .agentPermissions(AgentPermissions.builder().principals(getPrincipalsFunction.apply(proxy, pg.name())).build())
+                            .build()
+                    );
+                } catch (ResourceNotFoundException e) {
+                    // It's possible for a profiling group to have been deleted since we made the listProfilingGroups
+                    // request. In that case, don't include it in the response.
+                    logger.log(String.format("Profiling group \"%s\" no longer exists, it must have been deleted since we listed it.", pg.name()));
+                }
             });
 
             logger.log(String.format("%d \"%s\" for accountId [%s] has been successfully listed for token %s!", models.size(), ResourceModel.TYPE_NAME, awsAccountId, request.getNextToken()));
